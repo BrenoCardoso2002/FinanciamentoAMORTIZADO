@@ -1,0 +1,26 @@
+(function preencherSimulador() {
+    const campos = {
+        'valorImovel': '500.000,00',
+        'valorEntrada': '100.000,00',
+        'valorSubsidio': '20.000,00',
+        'prazo': '360',
+        'jurosAno': '10,50',
+        'valorPrimeiraParcela': '4.500,00',
+        'valorUltimaParcela': '1.200,00',
+        'valorMensalExtra': '800,00',
+        'intervaloAmort': '12'
+    };
+
+    console.log("🚀 Iniciando preenchimento automático...");
+
+    for (const [id, valor] of Object.entries(campos)) {
+        const input = document.getElementById(id);
+        if (input) {
+            input.value = valor;
+            // Dispara o evento 'input' para que seus listeners de máscara/cálculo funcionem
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
+    console.log("✅ Campos preenchidos. Clique em 'Simular Financiamento'.");
+})();
