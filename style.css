@@ -1,408 +1,728 @@
-  :root {
-    --bg: #0b0f1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #1e2d45;
-    --accent: #00d4aa;
-    --accent2: #0ea5e9;
-    --danger: #f43f5e;
-    --warn: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Sora', sans-serif;
+/* ============================================================
+   STYLE.CSS — Simulador PRICE — Financiamento Imobiliário
+   
+   Estrutura do arquivo:
+   1. Variáveis CSS (design tokens)
+   2. Reset e base
+   3. Layout (container, grid, cards)
+   4. Tipografia (header, títulos, hints)
+   5. Formulário (inputs, selects, labels)
+   6. Disclaimer / Termos de uso
+   7. Botão principal
+   8. Resultados (stats, progress, gráfico, tabela)
+   9. Paginação
+   10. Footer / Termos completos
+   11. Animações
+   12. Responsivo (mobile)
+   ============================================================ */
+
+
+/* ============================================================
+   1. VARIÁVEIS CSS — Design Tokens
+   Centralizadas aqui para facilitar customização de cor/fonte.
+   ============================================================ */
+:root {
+  /* Paleta principal */
+  --bg:        #0d1117;   /* fundo da página — quase preto */
+  --surface:   #161b22;   /* fundo dos cards */
+  --border:    #21262d;   /* bordas sutis */
+  --muted:     #8b949e;   /* texto secundário */
+  --text:      #e6edf3;   /* texto principal */
+
+  /* Cores de destaque */
+  --accent:    #00d4aa;   /* verde-teal — positivo, economizado */
+  --blue:      #58a6ff;   /* azul — informação neutra */
+  --warn:      #f59e0b;   /* amarelo — atenção (juros) */
+  --danger:    #f43f5e;   /* vermelho — negativo, custo */
+
+  /* Tipografia */
+  --font:      'Sora', sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+
+  /* Espaçamento padrão */
+  --radius:    12px;
+  --gap:       1.5rem;
+}
+
+
+/* ============================================================
+   2. RESET E BASE
+   Remove margens padrão do browser, define box-sizing global.
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  /* Gradiente radial sutil para dar profundidade ao fundo */
+  background-image: radial-gradient(ellipse at 20% 20%, rgba(0,212,170,0.04) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 80%, rgba(88,166,255,0.03) 0%, transparent 60%);
+  min-height: 100vh;
+}
+
+
+/* ============================================================
+   3. LAYOUT
+   Container central limitado a 900px, cards com borda/sombra.
+   ============================================================ */
+
+/* Wrapper central: limita largura e centraliza o conteúdo */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 4rem;
+}
+
+/* Card: bloco visual com fundo, borda e sombra */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.8rem;
+  margin-bottom: var(--gap);
+  /* Sombra para dar sensação de elevação */
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+/* Grid de 4 colunas para campos do formulário */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+/* Grid de 3 colunas */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+/* Grid de 2 colunas */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Linha de separação entre seções */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Área do simulador — bloqueada até aceite dos termos */
+.simulator-area {
+  transition: opacity 0.3s ease;
+}
+
+/* Estado bloqueado: opacidade reduzida + sem interação */
+.simulator-area.locked {
+  opacity: 0.35;
+  pointer-events: none;   /* impede cliques e digitação */
+  user-select: none;      /* impede seleção de texto */
+}
+
+
+/* ============================================================
+   4. TIPOGRAFIA
+   ============================================================ */
+
+/* Cabeçalho principal da página */
+header {
+  text-align: center;
+  padding: 3rem 0 2.5rem;
+}
+
+/* Badge acima do título */
+.badge {
+  display: inline-block;
+  background: rgba(0,212,170,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(0,212,170,0.2);
+  border-radius: 20px;
+  padding: 0.3rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+/* Título H1 */
+header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  /* Gradiente no texto do título */
+  background: linear-gradient(135deg, #e6edf3 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.8rem;
+}
+
+/* Subtítulo abaixo do H1 */
+.subtitle {
+  color: var(--muted);
+  font-size: 1rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Título de cada card */
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.2rem;
+}
+
+/* Dica/hint dentro dos cards */
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+
+/* Linha de informação dinâmica (ex: % de entrada) */
+.info-row {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Span de destaque dentro da info-row */
+.info-row span {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+
+/* ============================================================
+   5. FORMULÁRIO — Inputs, Selects, Labels
+   ============================================================ */
+
+/* Grupo campo + label */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Label do campo */
+.field label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Input de texto e select */
+.field input,
+.field select {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--mono);   /* fonte mono para números */
+  font-size: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+/* Foco nos campos */
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: rgba(0,212,170,0.4);
+  box-shadow: 0 0 0 3px rgba(0,212,170,0.08);
+}
+
+/* Campo readonly (valor financiado) — aparência diferente */
+.field input[readonly] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Cor do placeholder */
+.field input::placeholder {
+  color: rgba(139,148,158,0.5);
+}
+
+/* Select: cor do dropdown */
+.field select option {
+  background: var(--surface);
+}
+
+/* ---- Parcelas dinâmicas de entrada ---- */
+
+/* Wrapper que aparece/esconde conforme qtd de parcelas */
+.parcelas-entrada-wrap {
+  display: none;          /* oculto por padrão */
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Mostrado quando JS adiciona a classe "visible" */
+.parcelas-entrada-wrap.visible {
+  display: block;
+}
+
+/* Grid dos inputs individuais de parcela */
+.parcelas-entrada-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+/* ---- Juros de obra ---- */
+
+/* Wrapper que aparece quando período de obra for válido */
+.juros-obra-wrap {
+  display: none;
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+
+.juros-obra-wrap.visible {
+  display: block;
+}
+
+/* Grid dos inputs de juros mensais de obra */
+.juros-obra-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+
+/* ============================================================
+   6. DISCLAIMER / AVISO DE ISENÇÃO
+   Box com fundo diferenciado, obriga leitura antes de usar.
+   ============================================================ */
+
+/* Box principal do aviso */
+.disclaimer-box {
+  background: rgba(244,63,94,0.06);    /* fundo levemente vermelho */
+  border: 1px solid rgba(244,63,94,0.2);
+  border-radius: var(--radius);
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+}
+
+/* Título do aviso */
+.disclaimer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--danger);
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
+/* Corpo do texto do aviso */
+.disclaimer-body {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.disclaimer-body p {
+  margin-bottom: 0.8rem;
+}
+
+/* Lista dentro do aviso */
+.disclaimer-body ul {
+  padding-left: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.disclaimer-body li {
+  margin-bottom: 0.3rem;
+}
+
+/* Linha do checkbox de aceite */
+.disclaimer-accept {
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(244,63,94,0.15);
+}
+
+/* Label do checkbox — alinha ícone com texto */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Checkbox customizado */
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;      /* não encolhe quando texto quebra linha */
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   7. BOTÃO PRINCIPAL
+   ============================================================ */
+.btn {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent) 0%, #00b894 100%);
+  color: #0d1117;      /* texto escuro sobre fundo claro */
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1rem;
+  cursor: pointer;
+  margin-bottom: var(--gap);
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+/* Hover: leve elevação */
+.btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+/* Click: retorna */
+.btn:active {
+  transform: translateY(0);
+}
+
+
+/* ============================================================
+   8. RESULTADOS
+   Cards de estatísticas, barra de progresso, gráfico e tabela.
+   ============================================================ */
+
+/* ---- Cards de estatísticas ---- */
+
+/* Grid dos cards de resumo numérico */
+#statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+/* Card individual de estatística */
+.stat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* Label do stat */
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+/* Valor do stat */
+.stat-value {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Variações de cor por tipo de dado */
+.stat-value.accent { color: var(--accent); }
+.stat-value.blue   { color: var(--blue); }
+.stat-value.warn   { color: var(--warn); }
+.stat-value.danger { color: var(--danger); }
+
+/* ---- Barra de progresso (redução de prazo) ---- */
+
+.progress-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.8rem;
+  margin-bottom: var(--gap);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 0.8rem;
+}
+
+/* Trilho da barra */
+.progress-bar-bg {
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+/* Preenchimento da barra: animado por width via JS */
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #00b894);
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+/* ---- Tabela de parcelas ---- */
+
+/* Container com scroll horizontal para telas menores */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  font-family: var(--mono);
+}
+
+/* Cabeçalho da tabela */
+thead th {
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.8rem 0.9rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* Primeira coluna (Mês e Fase) alinhadas à esquerda */
+thead th:first-child,
+thead th:nth-child(2) {
+  text-align: left;
+}
+
+/* Células do corpo da tabela */
+tbody td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid rgba(33,38,45,0.6);
+  text-align: right;
+  color: var(--text);
+}
+
+tbody td:first-child,
+tbody td:nth-child(2) {
+  text-align: left;
+}
+
+/* Linha de obra: fundo levemente diferente */
+tbody tr.row-obra {
+  background: rgba(245,158,11,0.04);
+}
+
+/* Linha com amortização extra: destaque em verde */
+tbody tr.row-amort td {
+  background: rgba(0,212,170,0.04);
+}
+
+/* Hover em qualquer linha */
+tbody tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+/* Célula de juros: sempre amarela */
+.val-interest {
+  color: var(--warn) !important;
+}
+
+/* Célula de amortização extra: sempre verde */
+.val-amort {
+  color: var(--accent) !important;
+}
+
+/* Tags de fase na tabela (OBRA / FINANC.) */
+.phase-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.phase-tag.obra {
+  background: rgba(245,158,11,0.15);
+  color: var(--warn);
+}
+
+.phase-tag.financ {
+  background: rgba(88,166,255,0.12);
+  color: var(--blue);
+}
+
+
+/* ============================================================
+   9. PAGINAÇÃO
+   ============================================================ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+/* Botão de página */
+.page-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  transition: background 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0,212,170,0.1);
+  border-color: rgba(0,212,170,0.3);
+}
+
+/* Botão desabilitado (primeira/última página) */
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Indicador "X / Y" */
+.page-info {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  padding: 0 0.3rem;
+}
+
+
+/* ============================================================
+   10. FOOTER — TERMOS DE USO COMPLETOS
+   Sempre visível no rodapé da página.
+   ============================================================ */
+.terms-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+  padding-top: 2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+/* Título da seção de termos */
+.terms-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.02em;
+}
+
+/* Cada seção dos termos */
+.terms-section {
+  margin-bottom: 1rem;
+}
+
+.terms-section strong {
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+/* Linha de copyright no fim */
+.terms-copy {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(139,148,158,0.6);
+}
+
+
+/* ============================================================
+   11. ANIMAÇÕES
+   Fade-up suave nos resultados quando aparecem.
+   ============================================================ */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Classe aplicada nos cards de resultado */
+.fade-up {
+  animation: fadeUp 0.4s ease forwards;
+}
+
+
+/* ============================================================
+   12. RESPONSIVO — Mobile (< 640px)
+   Colapsa grids de múltiplas colunas para 1 coluna.
+   ============================================================ */
+@media (max-width: 640px) {
+  /* Título menor em mobile */
+  header h1 {
+    font-size: 1.6rem;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
+  /* Todos os grids viram 1 coluna */
+  .grid-4,
+  .grid-3,
+  .grid-2 {
+    grid-template-columns: 1fr;
   }
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  header {
-    text-align: center;
-    padding: 3rem 0 2.5rem;
-  }
-
-  .badge {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid rgba(0,212,170,0.3);
-    padding: 0.3rem 0.8rem;
-    border-radius: 99px;
-    margin-bottom: 1.2rem;
-  }
-
-  h1 {
-    font-size: clamp(2rem, 5vw, 3.2rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.8rem;
-  }
-
-  .subtitle {
-    color: var(--muted);
-    font-size: 0.95rem;
-    font-weight: 300;
-  }
-
+  /* Cards com menos padding */
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s;
+    padding: 1.2rem;
   }
 
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,212,170,0.4), transparent);
+  /* Stats: 2 por linha em mobile */
+  #statsGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
-
-  .card:hover { border-color: rgba(0,212,170,0.3); }
-
-  .card-title {
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-family: var(--mono);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .card-title::before {
-    content: '';
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
-  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
-
-  @media (max-width: 900px) {
-    .grid-3 { grid-template-columns: repeat(2, 1fr); }
-    .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 600px) {
-    .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
-  }
-
-  .field { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  label {
-    font-size: 0.78rem;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    font-weight: 400;
-  }
-
-  input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.95rem;
-    width: 100%;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
-  }
-
-  input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0,212,170,0.12);
-  }
-
-  input::placeholder { color: var(--muted); opacity: 0.5; }
-
-  .info-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-top: 0.3rem;
-  }
-
-  .info-row span { color: var(--accent); font-family: var(--mono); }
-
-  .btn {
-    width: 100%;
-    padding: 1rem 2rem;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #000;
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 0.95rem;
-    letter-spacing: 0.05em;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-    margin-top: 0.5rem;
-    box-shadow: 0 0 30px rgba(0,212,170,0.2);
-  }
-
-  .btn:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 40px rgba(0,212,170,0.35);
-  }
-
-  .btn:active { transform: translateY(0); }
-
-  #results { display: none; }
-
-  .stat-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem 1.4rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  .stat-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .stat-value {
-    font-family: var(--mono);
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .stat-value.accent { color: var(--accent); }
-  .stat-value.danger { color: var(--danger); }
-  .stat-value.warn { color: var(--warn); }
-
-  .progress-wrap {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-
-  .progress-bar-bg {
-    background: rgba(255,255,255,0.05);
-    border-radius: 99px;
-    height: 8px;
-    overflow: hidden;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    border-radius: 99px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    transition: width 0.8s cubic-bezier(.4,0,.2,1);
-    box-shadow: 0 0 12px rgba(0,212,170,0.5);
-  }
-
-  .table-wrap {
-    overflow-x: auto;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--mono);
-    font-size: 0.82rem;
-  }
-
-  thead th {
-    background: var(--surface2);
-    padding: 0.9rem 1rem;
-    text-align: left;
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-family: var(--sans);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-
-  tbody tr {
-    border-bottom: 1px solid rgba(30,45,69,0.6);
-    transition: background 0.15s;
-  }
-
-  tbody tr:last-child { border-bottom: none; }
-
-  tbody tr:hover { background: rgba(0,212,170,0.04); }
-
-  tbody td {
-    padding: 0.75rem 1rem;
-    color: var(--text);
-    white-space: nowrap;
-  }
-
-  tbody td:first-child { color: var(--muted); }
-
-  .amort-row {
-    background: rgba(0,212,170,0.06) !important;
-    border-left: 3px solid var(--accent);
-  }
-
-  .amort-row td:first-child { color: var(--accent) !important; }
-
-  .amort-badge {
-    display: inline-block;
-    background: rgba(0,212,170,0.15);
-    color: var(--accent);
-    font-size: 0.65rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
-    margin-left: 0.4rem;
-    letter-spacing: 0.08em;
-  }
-
-  .val-paid { color: var(--danger) !important; }
-  .val-amort { color: var(--accent) !important; }
-  .val-interest { color: var(--warn) !important; }
-
-  .pagination {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-    margin-top: 1.2rem;
-    flex-wrap: wrap;
-  }
-
-  .page-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 0.4rem 0.9rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    transition: all 0.15s;
-  }
-
-  .page-btn:hover, .page-btn.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,212,170,0.08);
-  }
-
-  .page-info {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    color: var(--muted);
-    padding: 0 0.5rem;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 2rem 0;
-  }
-
-  .hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-    background: rgba(0,212,170,0.07);
-    border: 1px solid rgba(0,212,170,0.15);
-    border-radius: 8px;
-    padding: 0.5rem 0.8rem;
-    margin-top: 0.8rem;
-  }
-
-  .hint svg { flex-shrink: 0; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .fade-up { animation: fadeUp 0.5s ease both; }
-
-  .legend {
-    display: flex;
-    gap: 1.2rem;
-    flex-wrap: wrap;
-    margin-top: 0.8rem;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-
-  .legend-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+}
