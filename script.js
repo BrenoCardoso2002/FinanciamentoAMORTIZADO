@@ -189,6 +189,12 @@ function setupEntradaListener() {
   document.getElementById('valorPadraoParcelaEntrada')
     .addEventListener('input', preencherPadraoEntrada);
 
+  // Mesma ideia, mas pra taxa de correção do INCC-DI — sem isso,
+  // quem não digitar mês a mês fica com 0% e a correção nunca
+  // aparece (foi exatamente o que confundiu no teste)
+  document.getElementById('inccTaxaPadrao')
+    .addEventListener('input', preencherPadraoIncc);
+
   // A Data de Assinatura também redefine a janela de meses do
   // grid do INCC-DI (ela é a referência do índice-base)
   document.getElementById('dataAssinatura')
@@ -280,6 +286,21 @@ function gerarInccInputs() {
   });
 
   wrap.classList.add('visible');
+  preencherPadraoIncc();      // já aplica a taxa padrão, se houver
+  atualizarTudoEntrada();     // garante o refresh mesmo sem taxa padrão definida
+}
+
+// Preenche com a taxa padrão só os campos do INCC ainda vazios —
+// igual ao preencherPadraoEntrada(), não sobrescreve o que já foi
+// digitado mês a mês com o índice real
+function preencherPadraoIncc() {
+  const padrao = document.getElementById('inccTaxaPadrao').value;
+  if (!padrao) return;
+
+  document.querySelectorAll('.incc-input').forEach((input) => {
+    if (!input.value) input.value = padrao;
+  });
+
   atualizarTudoEntrada();
 }
 

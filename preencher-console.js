@@ -45,12 +45,11 @@
   document.getElementById('valorPadraoParcelaEntrada').value = '1.000,00';
   preencherPadraoEntrada();
 
-  // Variação mensal do INCC-DI — valores fictícios só pra testar
-  // (no contrato real isso vem da FGV mês a mês)
-  document.querySelectorAll('.incc-input').forEach((input, i) => {
-    input.value = (0.7 + (i % 5) * 0.05).toFixed(2).replace('.', ',');
-  });
-  atualizarTudoEntrada();   // recalcula a tabela com as variações novas
+  // Taxa padrão do INCC-DI — preenche o grid inteiro de uma vez
+  // (no contrato real, o ideal é digitar mês a mês com o índice
+  // publicado pela FGV, mas pra teste rápido um valor médio serve)
+  document.getElementById('inccTaxaPadrao').value = '0,80';
+  preencherPadraoIncc();
 
   // Juros de Obra (Cláusula 4)
   document.getElementById('obraInicio').value = '08/2026';

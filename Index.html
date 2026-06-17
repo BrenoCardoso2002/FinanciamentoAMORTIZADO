@@ -187,10 +187,21 @@
             <line x1="12" y1="8" x2="12" y2="12"/>
             <line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          Correção das parcelas pelo INCC-DI/FGV (até o Habite-se). Informe a variação
-          mensal do índice (ex: 0,80). A correção nunca reduz a parcela abaixo do valor
-          original, mesmo com deflação.
+          Correção das parcelas pelo INCC-DI/FGV (até o Habite-se). A correção nunca
+          reduz a parcela abaixo do valor original, mesmo com deflação.
         </div>
+
+        <!-- Taxa padrão: preenche o grid inteiro de uma vez, igual ao
+             "Valor Padrão das Parcelas" — sem isso, ficar sem digitar
+             em cada mês faz a correção ficar parada em 0% -->
+        <div class="field" style="margin-top:0.8rem;max-width:260px">
+          <label>
+            Taxa Padrão Mensal do INCC (%)
+            <span style="color:var(--muted);font-size:0.7em">— opcional, ex: 0,80</span>
+          </label>
+          <input type="text" id="inccTaxaPadrao" placeholder="0,80" data-mask="decimal">
+        </div>
+
         <!-- Grid gerado dinamicamente por gerarInccInputs() -->
         <div class="incc-grid" id="inccGrid"></div>
       </div>
