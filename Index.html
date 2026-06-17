@@ -5,161 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simulador PRICE — Financiamento Imobiliário</title>
 
-  <!-- Fontes do Google: Sora para títulos, JetBrains Mono para números -->
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Fontes: Fraunces (display/cláusulas), IBM Plex Sans (corpo), IBM Plex Mono (números) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <!-- SweetAlert2: biblioteca de modais bonitos -->
+  <!-- SweetAlert2: biblioteca de modais (tema customizado em style.css, seção 11) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.8/sweetalert2.min.css">
 
   <link rel="stylesheet" href="style.css">
-
-  <!-- Customizações do SweetAlert2 para combinar com o tema escuro do site -->
-  <style>
-    /* Fundo do popup — mesma cor dos cards */
-    .swal2-popup {
-      background: #161b22 !important;
-      border: 1px solid #21262d !important;
-      border-radius: 16px !important;
-      font-family: 'Sora', sans-serif !important;
-      color: #e6edf3 !important;
-      max-width: 560px !important;
-    }
-
-    /* Ícone de aviso */
-    .swal2-icon.swal2-warning {
-      border-color: #f59e0b !important;
-      color: #f59e0b !important;
-    }
-
-    /* Título */
-    .swal2-title {
-      color: #e6edf3 !important;
-      font-size: 1.2rem !important;
-      font-weight: 700 !important;
-    }
-
-    /* Corpo do texto */
-    .swal2-html-container {
-      color: #8b949e !important;
-      font-size: 0.85rem !important;
-      line-height: 1.7 !important;
-      text-align: left !important;
-    }
-
-    /* Scroll no corpo se o texto for longo */
-    .swal2-html-container {
-      max-height: 320px !important;
-      overflow-y: auto !important;
-      padding: 0 0.5rem !important;
-    }
-
-    /* Scrollbar customizada */
-    .swal2-html-container::-webkit-scrollbar { width: 4px; }
-    .swal2-html-container::-webkit-scrollbar-track { background: transparent; }
-    .swal2-html-container::-webkit-scrollbar-thumb { background: #21262d; border-radius: 2px; }
-
-    /* Botão de aceite — verde teal */
-    .swal2-confirm {
-      background: linear-gradient(135deg, #00d4aa, #00b894) !important;
-      color: #0d1117 !important;
-      font-family: 'Sora', sans-serif !important;
-      font-weight: 700 !important;
-      font-size: 0.95rem !important;
-      border-radius: 8px !important;
-      padding: 0.7rem 2rem !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-
-    /* Botão de recusar — vermelho apagado */
-    .swal2-deny {
-      background: rgba(244,63,94,0.15) !important;
-      color: #f43f5e !important;
-      font-family: 'Sora', sans-serif !important;
-      font-weight: 600 !important;
-      font-size: 0.9rem !important;
-      border-radius: 8px !important;
-      padding: 0.7rem 1.5rem !important;
-      border: 1px solid rgba(244,63,94,0.3) !important;
-      box-shadow: none !important;
-    }
-
-    /* Fundo escurecido atrás do modal */
-    .swal2-backdrop-show {
-      background: rgba(0,0,0,0.7) !important;
-      backdrop-filter: blur(4px) !important;
-    }
-
-    /* Toast de erro (canto inferior) */
-    .swal2-toast {
-      background: #161b22 !important;
-      border: 1px solid rgba(244,63,94,0.3) !important;
-      color: #e6edf3 !important;
-    }
-
-    .swal2-toast .swal2-title {
-      font-size: 0.9rem !important;
-    }
-
-    /* Overlay de "você deve aceitar" — aparece quando tenta usar sem aceitar */
-    #blockedOverlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(6px);
-      z-index: 9000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #blockedOverlay.show {
-      display: flex;
-    }
-
-    .blocked-card {
-      background: #161b22;
-      border: 1px solid rgba(244,63,94,0.3);
-      border-radius: 16px;
-      padding: 2.5rem 2rem;
-      max-width: 420px;
-      text-align: center;
-      font-family: 'Sora', sans-serif;
-    }
-
-    .blocked-card h2 {
-      color: #f43f5e;
-      font-size: 1.1rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .blocked-card p {
-      color: #8b949e;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
-
-    .blocked-card button {
-      background: linear-gradient(135deg, #00d4aa, #00b894);
-      color: #0d1117;
-      border: none;
-      border-radius: 8px;
-      font-family: 'Sora', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
-      padding: 0.7rem 2rem;
-      cursor: pointer;
-    }
-  </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- Overlay que aparece quando o usuário tenta usar sem aceitar os termos -->
+  <!-- Overlay que aparece quando o usuário tenta usar sem aceitar os termos.
+       Permanece neste estado até que o JS remova a classe "show" (ver
+       mostrarModalTermos() / toggleSimulator() no script.js original). -->
   <div id="blockedOverlay">
     <div class="blocked-card">
-      <h2>⚠️ Aceite necessário</h2>
+      <span class="blocked-stamp">Aceite pendente</span>
+      <h2>Aceite necessário</h2>
       <p>
         Para usar o simulador você precisa aceitar os Termos de Uso.<br>
         Ao usar esta ferramenta você declara ciência de que os resultados
@@ -173,17 +37,13 @@
        CABEÇALHO PRINCIPAL
        ============================================================ -->
   <header>
-    <div class="badge">Simulador Financeiro — PRICE</div>
+    <div class="dossier-meta">Dossiê de Simulação — Método PRICE</div>
+    <div class="seal" aria-hidden="true"><span>Simulador<br>Financeiro</span></div>
     <h1>Financiamento Imobiliário</h1>
     <p class="subtitle">
       Calcule parcelas PRICE, juros de obra, entrada parcelada e amortizações extras
     </p>
   </header>
-
-  <!-- ============================================================
-       AVISO: os termos de uso são exibidos via SweetAlert2 ao
-       abrir a página. O simulador fica bloqueado até o aceite.
-       ============================================================ -->
 
   <!-- ============================================================
        ÁREA DO SIMULADOR
@@ -198,7 +58,7 @@
          (calculado automaticamente pela subtração)
          ========================================== -->
     <div class="card">
-      <div class="card-title">Dados do Imóvel</div>
+      <div class="card-title"><span class="clause-tag">Cláusula 1</span>Dados do Imóvel</div>
       <div class="grid-4">
 
         <div class="field">
@@ -229,10 +89,12 @@
          CARD 2 — ENTRADA
          Ato (pago na assinatura) + parcelas mensais
          antes da entrega das chaves.
-         Ambos abates do valor financiado.
+         Ambos abatem do valor financiado.
          ========================================== -->
     <div class="card">
-      <div class="card-title">Entrada</div>
+      <div class="card-title"><span class="clause-tag">Cláusula 2</span>Entrada</div>
+
+      <!-- Linha 1: valores pontuais, pagos uma vez só, sem correção -->
       <div class="grid-3">
 
         <div class="field">
@@ -241,6 +103,38 @@
             <span style="color:var(--muted);font-size:0.7em">— pago na assinatura</span>
           </label>
           <input type="text" id="valorAto" placeholder="R$ 50.000,00" data-mask="money">
+        </div>
+
+        <div class="field">
+          <label>
+            Valor do FGTS (R$)
+            <span style="color:var(--muted);font-size:0.7em">— se houver</span>
+          </label>
+          <input type="text" id="valorFgts" placeholder="R$ 0,00" data-mask="money">
+        </div>
+
+        <div class="field">
+          <label>
+            Valor Extra (R$)
+            <span style="color:var(--muted);font-size:0.7em">— se houver</span>
+          </label>
+          <input type="text" id="valorExtra" placeholder="R$ 0,00" data-mask="money">
+        </div>
+
+      </div>
+
+      <!-- Linha 2: configuração das parcelas mensais da entrada -->
+      <div class="grid-3" style="margin-top:1rem">
+
+        <div class="field">
+          <label>
+            Data de Assinatura (MM/AAAA)
+            <span style="color:var(--muted);font-size:0.7em">— ancora a correção das parcelas</span>
+          </label>
+          <!-- A 1ª parcela cai neste mês (sem correção). Cada parcela seguinte
+               corrige 1% a.m. a partir daqui — ver correcao_parcela no JS. -->
+          <input type="text" id="dataAssinatura"
+                 placeholder="03/2026" data-mask="mmaaaa" maxlength="7">
         </div>
 
         <div class="field">
@@ -264,7 +158,7 @@
 
       <!-- Área dinâmica: aparece quando o usuário informa qtd de parcelas.
            A classe "visible" é adicionada via JS para mostrar/esconder. -->
-      <div class="parcelas-entrada-wrap" id="parcelasEntradaWrap">
+      <div class="dynamic-wrap" id="parcelasEntradaWrap">
         <div class="hint">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2">
@@ -278,19 +172,43 @@
         <div class="parcelas-entrada-grid" id="parcelasEntradaGrid"></div>
       </div>
 
+      <!-- Área dinâmica: correção monetária das parcelas pelo INCC-DI/FGV
+           (Cláusula 4.1 do contrato). Aparece quando há pelo menos 2
+           parcelas — a 1ª nunca corrige (é o próprio mês-base), então só
+           a partir da 2ª existe variação de índice pra digitar.
+           Defasagem de 2 meses: a correção de cada parcela usa o índice
+           do 2º mês anterior ao seu vencimento, comparado ao índice do
+           2º mês anterior à assinatura (cláusula 4.1.1, alíneas a/c). -->
+      <div class="dynamic-wrap" id="inccWrap">
+        <div class="hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Correção das parcelas pelo INCC-DI/FGV (até o Habite-se). Informe a variação
+          mensal do índice (ex: 0,80). A correção nunca reduz a parcela abaixo do valor
+          original, mesmo com deflação.
+        </div>
+        <!-- Grid gerado dinamicamente por gerarInccInputs() -->
+        <div class="incc-grid" id="inccGrid"></div>
+      </div>
+
       <!-- Linha de informação: mostra breakdown ato + parcelas + total -->
       <div class="info-row" id="infoEntradaDetalhe" style="margin-top:0.8rem"></div>
     </div>
+
 
     <!-- ==========================================
          CARD 3 — CONDIÇÕES DO FINANCIAMENTO
          Prazo, taxa de juros, IPCA e amortização extra.
          O IPCA é a grande diferença em relação ao PRICE
-         convencional: corrije o saldo todo mês antes
+         convencional: corrige o saldo todo mês antes
          dos juros incidirem.
          ========================================== -->
     <div class="card">
-      <div class="card-title">Condições do Financiamento (PRICE)</div>
+      <div class="card-title"><span class="clause-tag">Cláusula 3</span>Condições do Financiamento (PRICE)</div>
       <div class="grid-3">
 
         <div class="field">
@@ -363,10 +281,8 @@
          ========================================== -->
     <div class="card">
       <div class="card-title">
-        Juros de Obra
-        <span style="color:var(--muted);font-weight:300;font-size:0.85em;margin-left:0.3rem">
-          — opcional
-        </span>
+        <span class="clause-tag">Cláusula 4</span>Juros de Obra
+        <span class="opt">— opcional</span>
       </div>
 
       <div class="grid-2">
@@ -388,7 +304,7 @@
 
       <!-- Área dinâmica: inputs de R$ de juros mensais aparecem quando
            o período (início/fim) for válido. Um input por mês de obra. -->
-      <div class="juros-obra-wrap" id="jurosObraWrap">
+      <div class="dynamic-wrap" id="jurosObraWrap">
         <div class="hint" style="margin-bottom:0.8rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2">
@@ -398,7 +314,7 @@
           </svg>
           Informe o valor de juros de cada mês conforme a curva teórica de obra
           da construtora (ex: R$ 390,89). Esses valores são cobrados à parte —
-          não abate o saldo financiado.
+          não abatem o saldo financiado.
         </div>
         <!-- Grid de inputs gerado dinamicamente por gerarJurosObraInputs() -->
         <div class="juros-obra-inputs-grid" id="jurosObraGrid"></div>
@@ -421,7 +337,12 @@
 
       <!-- Cards de resumo numérico -->
       <div class="card fade-up">
-        <div class="card-title">Resumo da Simulação</div>
+        <div class="card-title-row">
+          <div class="card-title"><span class="clause-tag">Anexo I</span>Resumo da Simulação</div>
+          <!-- Lê o texto já renderizado em #statsGrid e gera um PDF — não
+               depende do motor de cálculo, só do que já está na tela -->
+          <button class="btn-secondary" onclick="exportarResumoPDF()">⭳ Exportar PDF</button>
+        </div>
         <!-- Grid preenchido dinamicamente por renderStats() -->
         <div class="grid-4" id="statsGrid"></div>
       </div>
@@ -441,20 +362,20 @@
       <!-- Gráfico canvas: evolução do saldo devedor mês a mês.
            Renderizado por renderGrafico() com canvas nativo (sem bibliotecas). -->
       <div class="card fade-up" id="graficoWrap" style="display:none">
-        <div class="card-title">Evolução do Saldo Devedor</div>
+        <div class="card-title"><span class="clause-tag">Anexo II</span>Evolução do Saldo Devedor</div>
 
         <!-- Legenda das 3 linhas do gráfico -->
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.2rem;align-items:center">
           <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--muted)">
-            <div style="width:28px;height:3px;background:var(--accent);border-radius:2px"></div>
+            <div style="width:28px;height:3px;background:var(--brass);border-radius:2px"></div>
             Com amortização extra
           </div>
           <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--muted)">
-            <div style="width:28px;height:3px;background:var(--danger);border-radius:2px;opacity:0.6"></div>
+            <div style="width:28px;height:3px;background:var(--stamp);border-radius:2px;opacity:0.7"></div>
             Sem amortização extra
           </div>
           <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--muted)">
-            <div style="width:28px;height:3px;background:var(--warn);border-radius:2px;opacity:0.7"></div>
+            <div style="width:28px;height:3px;background:var(--blue);border-radius:2px;opacity:0.7"></div>
             Juros acumulados
           </div>
         </div>
@@ -463,29 +384,110 @@
         <canvas id="graficoSaldo" style="width:100%;height:280px;display:block"></canvas>
       </div>
 
-      <!-- Tabela detalhada mês a mês com paginação -->
+      <!-- ==========================================
+           ANEXO III — TABELA DE PARCELAS, EM ABAS
+           4 visões sobre os mesmos pagamentos:
+             - Entrada       → ato/fgts/extra/parcelas (Cláusula 2), já real
+             - Obras         → juros de obra digitados (Cláusula 4), já real
+             - Obras+Entrada → as duas anteriores cruzadas por mês, já real
+             - Financiamento → tabela PRICE pós-chaves — fica vazia até
+                               calcular() ser implementado (motor de cálculo)
+           Trocar de aba só esconde/mostra; quem preenche os dados de
+           verdade são as funções renderizarTabela*() no script.js.
+           ========================================== -->
       <div class="card fade-up">
-        <div class="card-title">Tabela de Parcelas</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th>Fase</th>
-                <th>Saldo Inicial</th>
-                <th>Amortização</th>
-                <th>Juros</th>
-                <th>Parcela</th>
-                <th>Amort. Extra</th>
-                <th>Saldo Final</th>
-              </tr>
-            </thead>
-            <!-- Corpo preenchido dinamicamente por renderTable() -->
-            <tbody id="tableBody"></tbody>
-          </table>
+        <div class="card-title-row">
+          <div class="card-title"><span class="clause-tag">Anexo III</span>Tabela de Parcelas</div>
+          <!-- Exporta as 4 abas de uma vez, cada uma numa planilha (SheetJS
+               lê o <table> renderizado, funciona mesmo com a aba escondida) -->
+          <button class="btn-secondary" onclick="exportarTabelas()">⭳ Exportar Excel</button>
         </div>
-        <!-- Botões de paginação gerados por renderPagination() -->
-        <div class="pagination" id="pagination"></div>
+
+        <div class="tabs" id="tableTabs">
+          <button class="tab-btn active" data-target="panelEntrada">Entrada</button>
+          <button class="tab-btn" data-target="panelObras">Obras</button>
+          <button class="tab-btn" data-target="panelObrasEntrada">Obras + Entrada</button>
+          <button class="tab-btn" data-target="panelFinanciamento">Financiamento</button>
+        </div>
+
+        <!-- ABA 1 — Entrada: ato, fgts, extra e cada parcela, já corrigida -->
+        <div class="tab-panel" id="panelEntrada">
+          <div class="table-wrap">
+            <table id="tableEntrada">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Mês/Ano</th>
+                  <th>Valor Base</th>
+                  <th>Correção</th>
+                  <th>Valor Corrigido</th>
+                </tr>
+              </thead>
+              <!-- Preenchido por renderizarTabelaEntrada() -->
+              <tbody id="tableBodyEntrada"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ABA 2 — Obras: espelha os juros de obra digitados na Cláusula 4 -->
+        <div class="tab-panel" id="panelObras" style="display:none">
+          <div class="table-wrap">
+            <table id="tableObras">
+              <thead>
+                <tr>
+                  <th>Mês/Ano</th>
+                  <th>Juros de Obra</th>
+                  <th>Acumulado</th>
+                </tr>
+              </thead>
+              <!-- Preenchido por renderizarTabelaObras() -->
+              <tbody id="tableBodyObras"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ABA 3 — Obras + Entrada: cruza as duas linhas do tempo por mês -->
+        <div class="tab-panel" id="panelObrasEntrada" style="display:none">
+          <div class="table-wrap">
+            <table id="tableObrasEntrada">
+              <thead>
+                <tr>
+                  <th>Mês/Ano</th>
+                  <th>Parcela da Entrada</th>
+                  <th>Juros de Obra</th>
+                  <th>Total do Mês</th>
+                </tr>
+              </thead>
+              <!-- Preenchido por renderizarTabelaObrasEntrada() -->
+              <tbody id="tableBodyObrasEntrada"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ABA 4 — Financiamento: tabela PRICE pós-chaves.
+             Fica vazia até calcular() existir de verdade. -->
+        <div class="tab-panel" id="panelFinanciamento" style="display:none">
+          <div class="table-wrap">
+            <table id="tableFinanciamento">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Saldo Inicial</th>
+                  <th>Juros</th>
+                  <th>Amortização</th>
+                  <th>Parcela</th>
+                  <th>Amort. Extra</th>
+                  <th>Saldo Final</th>
+                </tr>
+              </thead>
+              <!-- Preenchido por calcular() — fora de escopo aqui -->
+              <tbody id="tableBodyFinanciamento"></tbody>
+            </table>
+          </div>
+          <!-- Botões de paginação gerados por calcular()/renderPagination() -->
+          <div class="pagination" id="paginationFinanciamento"></div>
+        </div>
+
       </div>
     </div><!-- /results -->
 
@@ -554,6 +556,10 @@
 </div><!-- /container -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.8/sweetalert2.all.min.js"></script>
+<!-- jsPDF: usado por exportarResumoPDF() -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- SheetJS (xlsx): usado por exportarTabelas() -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
