@@ -1,52 +1,84 @@
-/* ============================================================
-   SCRIPT.JS — Comportamento de interface (sem motor de cálculo)
+/* ================================================================
+   UTILITÁRIOS — FONTE ÚNICA
+   (antes existiam 3 cópias de formatarMoeda/desformatarMoeda/
+   formatarMesAno espalhadas pelo arquivo, e duas funções fazendo
+   a mesma coisa: formatarNumero e formatarQuantidade. Agora só
+   existe um lugar pra cada coisa.)
+   ================================================================ */
+const Utils = {
+  moeda: {
+    // Máscara de input tipo "centavos invertidos": digita 1234 -> R$ 12,34
+    formatar(texto) {
+      const numeros = String(texto).replace(/\D/g, '');
+      if (!numeros) return 'R$ 0,00';
+      const valor = parseFloat(numeros) / 100;
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    },
+    // Converte "R$ 1.234,56" -> 1234.56 (number puro, pronto pra conta)
+    desformatar(textoFormatado) {
+      if (!textoFormatado) return 0;
+      const limpo = String(textoFormatado).replace(/[^0-9,]/g, '').replace(',', '.');
+      const numero = parseFloat(limpo);
+      return isNaN(numero) ? 0 : numero;
+    }
+  },
 
-   ESCOPO DESTE ARQUIVO:
-     ✓ Modal de Termos de Uso + tela de bloqueio (SweetAlert2)
-     ✓ Exibir/ocultar os blocos de campos que nascem escondidos
-       (Parcelas da Entrada, Juros de Obra)
-     ✓ Tabelas de Entrada / Obras / Obras+Entrada — são só o eco
-       organizado do que já foi digitado nos cards de cima. A
-       correção da Entrada segue a Cláusula 4.1 do contrato real
-       (INCC-DI/FGV, com a defasagem de 2 meses) — você digita a
-       variação mensal do índice, o resto é matemática simples,
-       não é o motor de financiamento
-     ✓ Abas da Tabela de Parcelas (Anexo III)
-     ✓ Exportar PDF / Excel — leem o HTML já renderizado na tela,
-       não dependem de nenhuma lógica de cálculo financeiro
+  data: {
+    // Digita 062026 -> mostra 06/2026
+    formatarMesAno(texto) {
+      const numeros = String(texto).replace(/\D/g, '').substring(0, 6);
+      return numeros.length > 2 ? numeros.slice(0, 2) + '/' + numeros.slice(2) : numeros;
+    }
+  },
 
-   FORA DO ESCOPO (de propósito):
-     ✗ Máscaras de digitação (R$ / % / data) — os inputs aceitam
-       texto livre por enquanto.
-     ✗ Sincronismo do "Valor Financiado" (Cláusula 1).
-     ✗ Tabela "Financiamento" (Anexo III, aba 4) e calcular() —
-       o motor PRICE/IPCA/correção anual. Fica um stub no fim do
-       arquivo só pra não estourar erro no console.
-   ============================================================ */
+  numero: {
+    // Inteiro positivo sem zero à esquerda. Usado em "quantidade de parcelas".
+    formatarQuantidade(texto) {
+      let numeros = String(texto).replace(/\D/g, '');
+      if (numeros.startsWith('0')) numeros = numeros.replace(/^0+/, '');
+      return numeros;
+    },
 
+    // Mesma lógica de máscara do campo de moeda (dígitos digitados =
+    // casas decimais), só que termina em "%" em vez de começar com "R$".
+    // Ex: digitar 1 -> "0,01%", digitar 100 -> "1,00%", digitar 150 -> "1,50%".
+    formatarPercentual(texto) {
+      const numeros = String(texto).replace(/\D/g, '');
+      if (!numeros) return '';
+      const valor = parseFloat(numeros) / 100;
+      return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+    },
 
-/* ------------------------------------------------------------
-   1. TERMOS DE USO — modal de aceite obrigatório
+    // "1,50%" -> 0.015 (decimal pronto pra usar em Math.pow)
+    percentualParaDecimal(texto) {
+      if (!texto) return 0;
+      const limpo = String(texto).replace(/[^0-9,]/g, '').replace(',', '.');
+      const valor = parseFloat(limpo);
+      return isNaN(valor) ? 0 : valor / 100;
+    },
 
-   A página nasce com o simulador bloqueado (classe "locked" em
-   #simulatorArea, já no HTML). O usuário só libera o uso
-   aceitando o modal abaixo. Se recusar, a tela cheia
-   #blockedOverlay aparece travando o acesso até ele decidir
-   de novo (botão dela chama mostrarModalTermos() outra vez).
-   ------------------------------------------------------------ */
+    // CORREÇÃO COMPOSTA: cada parcela = valorBase * (1 + taxa) ^ índice
+    // Exemplo (valorBase=1000, taxa=0.01): 1000, 1010, 1020.1, 1030.301...
+    // Isso é exatamente a conta que você descreveu no pedido.
+    calcularSerieComposta(valorBase, taxaDecimal, quantidade) {
+      const serie = [];
+      for (let i = 0; i < quantidade; i++) {
+        serie.push(valorBase * Math.pow(1 + taxaDecimal, i));
+      }
+      return serie;
+    }
+  }
+};
 
-// Dispara o modal automaticamente quando a página carrega
+/* ================================================================
+   TERMOS DE USO — modal de aceite obrigatório
+   (sem mudanças de lógica aqui, só mantido pra arquivo ficar completo)
+   ================================================================ */
 function iniciarTermos() {
   mostrarModalTermos();
 }
 
-// Também é chamada pelo botão dentro do #blockedOverlay
-// (veja o onclick="mostrarModalTermos()" no HTML)
 function mostrarModalTermos() {
-  // Em vez de duplicar o texto dos termos aqui, puxa direto das
-  // 5 seções já escritas no rodapé (.terms-footer) — assim só
-  // existe um lugar pra editar o texto, e os dois ficam sempre
-  // sincronizados
   const secoes = [...document.querySelectorAll('.terms-footer .terms-section')]
     .map((secao) => secao.outerHTML)
     .join('');
@@ -64,704 +96,424 @@ function mostrarModalTermos() {
     showDenyButton: true,
     confirmButtonText: 'Aceito, continuar',
     denyButtonText: 'Não aceito',
-    allowOutsideClick: false,   // obriga a escolher um dos botões
+    allowOutsideClick: false,
     allowEscapeKey: false
   }).then((resultado) => {
     if (resultado.isConfirmed) {
       liberarSimulador();
     } else {
-      // "Não aceito" -> mantém travado e mostra a tela de bloqueio
       bloquearSimulador();
     }
   });
 }
 
-// Libera o simulador: remove a opacidade/travamento e some
-// com a tela de bloqueio cheia, se estiver visível
 function liberarSimulador() {
   document.getElementById('simulatorArea').classList.remove('locked');
   document.getElementById('blockedOverlay').classList.remove('show');
 }
 
-// Mostra a tela de bloqueio cheia (chamada quando o usuário
-// recusa os termos)
 function bloquearSimulador() {
   document.getElementById('blockedOverlay').classList.add('show');
 }
 
+/* ================================================================
+   01. DADOS DO IMÓVEL
+   ================================================================ */
+const camposCalculo = document.querySelectorAll("#valorImovel, #valorSubsidio");
 
-/* ------------------------------------------------------------
-   2. UTILITÁRIOS DE DATA E NÚMERO
-   Usados tanto pela Entrada quanto pelos Juros de Obra — por
-   isso ficam num lugar só, em vez de duplicados em cada seção.
-   ------------------------------------------------------------ */
+camposCalculo.forEach(campo => {
+  campo.addEventListener('input', (evento) => {
+    evento.target.value = Utils.moeda.formatar(evento.target.value);
+    calculaValorFinanciadoBruto();
+  });
+});
 
-// Converte "MM/AAAA" em {mes, ano}, ou null se o texto não
-// fizer sentido (mês fora de 1–12, ano sem 4 dígitos, etc.)
-function parseMmAaaa(texto) {
-  const partes = (texto || '').split('/');
-  if (partes.length !== 2) return null;
+function calculaValorFinanciadoBruto() {
+  const imovel = Utils.moeda.desformatar(document.getElementById("valorImovel")?.value);
+  const subsidio = Utils.moeda.desformatar(document.getElementById("valorSubsidio")?.value);
 
-  const mes = parseInt(partes[0], 10);
-  const ano = parseInt(partes[1], 10);
+  let financiado = imovel - subsidio;
+  if (financiado < 0) financiado = 0; // subsídio maior que o imóvel não existe na prática
 
-  if (!mes || !ano || mes < 1 || mes > 12 || partes[1].length !== 4) return null;
+  document.getElementById("valorFinanciado").value = Utils.moeda.formatar(financiado.toFixed(2));
+}
 
+/* ================================================================
+   02. ENTRADA — campos e estado
+   ================================================================ */
+const dom = {
+  camposMoeda: document.querySelectorAll("#valorAto, #valorFgts, #valorExtra, #valorInicialParcelaEntrada"),
+  dataAssinatura: document.getElementById("dataAssinatura"),
+  parcelasEntrada: document.getElementById("nParcelasEntrada"),
+  valorInicial: document.getElementById("valorInicialParcelaEntrada"),
+  wrapParcelas: document.getElementById('parcelasEntradaWrap'),
+  gridParcelas: document.getElementById('parcelasEntradaGrid'),
+  correcaoParcelas: document.getElementById('correcaoParcelas')
+};
+
+// DECISÃO DE DESIGN (não estava no seu pedido, tive que assumir):
+// qualquer mudança em quantidade, valor inicial ou taxa REGENERA a série
+// inteira, sobrescrevendo edições manuais feitas direto nos campos de
+// parcela. Se isso for um problema, o ajuste fica em gerarParcelasEntrada():
+// em vez de reescrever tudo, teria que guardar quais índices foram
+// editados manualmente e recalcular só a partir do próximo índice não-editado.
+
+dom.camposMoeda.forEach(campo => {
+  campo.addEventListener('input', (evento) => {
+    evento.target.value = Utils.moeda.formatar(evento.target.value);
+    calculaValorFinanciado();
+    if (evento.target.id === 'valorInicialParcelaEntrada') {
+      tentarGerarParcelas();
+    }
+  });
+});
+
+dom.dataAssinatura?.addEventListener('input', (evento) => {
+  evento.target.value = Utils.data.formatarMesAno(evento.target.value);
+});
+
+dom.parcelasEntrada?.addEventListener('input', (evento) => {
+  evento.target.value = Utils.numero.formatarQuantidade(evento.target.value);
+  tentarGerarParcelas();
+});
+
+dom.correcaoParcelas?.addEventListener('input', (evento) => {
+  evento.target.value = Utils.numero.formatarPercentual(evento.target.value);
+
+  // Sem isso, o navegador joga o cursor pro final (depois do "%") sempre
+  // que reescrevemos o value. Aí o Backspace apaga o "%" — que a máscara
+  // recoloca na hora — e o dígito nunca é removido. Forçando o cursor pra
+  // ficar antes do "%", o Backspace volta a apagar dígito por dígito.
+  const posicaoAntesDoSimbolo = evento.target.value.length - 1;
+  evento.target.setSelectionRange(posicaoAntesDoSimbolo, posicaoAntesDoSimbolo);
+
+  tentarGerarParcelas();
+});
+
+// Único ponto que decide "tem condição de gerar parcelas ou não".
+// Regra que você passou: precisa ter quantidade E valor inicial.
+// Taxa é opcional — vazio = 0%.
+function tentarGerarParcelas() {
+  const temQtd = dom.parcelasEntrada?.value.trim() !== '';
+  const temValorInicial = dom.valorInicial?.value.trim() !== '';
+
+  if (temQtd && temValorInicial) {
+    gerarParcelasEntrada();
+  } else {
+    dom.wrapParcelas?.classList.remove('visible');
+    if (dom.gridParcelas) dom.gridParcelas.innerHTML = '';
+  }
+}
+
+function calculaValorFinanciado() {
+  const ato = Utils.moeda.desformatar(document.getElementById("valorAto")?.value);
+  const fgts = Utils.moeda.desformatar(document.getElementById("valorFgts")?.value);
+  const extra = Utils.moeda.desformatar(document.getElementById("valorExtra")?.value);
+
+  // ato/fgts/extra calculados mas sem destino — no código original também
+  // não tinham. Se existir um campo de "total de entrada" no seu HTML,
+  // descomenta e ajusta o id:
+  // document.getElementById("totalEntrada").value =
+  //   Utils.moeda.formatar((ato + fgts + extra).toFixed(2));
+}
+
+/* ================================================================
+   GERAÇÃO DAS PARCELAS COM CORREÇÃO COMPOSTA
+   ================================================================ */
+function gerarParcelasEntrada() {
+  const qtd = parseInt(dom.parcelasEntrada.value) || 0;
+  const valorBase = Utils.moeda.desformatar(dom.valorInicial.value);
+  const taxaDecimal = Utils.numero.percentualParaDecimal(dom.correcaoParcelas?.value || '0');
+
+  if (qtd <= 0 || valorBase <= 0 || !dom.gridParcelas) {
+    dom.wrapParcelas?.classList.remove('visible');
+    if (dom.gridParcelas) dom.gridParcelas.innerHTML = '';
+    return;
+  }
+
+  // Parcela 1 = valorBase. Parcela N = valorBase * (1+taxa)^(N-1).
+  const serie = Utils.numero.calcularSerieComposta(valorBase, taxaDecimal, qtd);
+
+  dom.gridParcelas.innerHTML = '';
+
+  serie.forEach((valor, indice) => {
+    const numeroParcela = indice + 1;
+    const campo = document.createElement('div');
+    campo.className = 'field';
+    campo.innerHTML = `
+      <label>Parcela ${numeroParcela}</label>
+      <input type="text"
+             class="parcela-entrada-input"
+             id="parcelaEntrada_${numeroParcela}"
+             value="${Utils.moeda.formatar(valor.toFixed(2))}">
+    `;
+    dom.gridParcelas.appendChild(campo);
+  });
+
+  // Campos ficam editáveis depois de gerados. Editar aqui NÃO recalcula
+  // as parcelas seguintes (ver decisão de design no topo da seção).
+  dom.gridParcelas.querySelectorAll('.parcela-entrada-input').forEach((input) => {
+    input.addEventListener('input', (evento) => {
+      evento.target.value = Utils.moeda.formatar(evento.target.value);
+      if (typeof atualizarTudoEntrada === 'function') atualizarTudoEntrada();
+    });
+  });
+
+  dom.wrapParcelas?.classList.add('visible');
+
+  // Mantidas como chamadas condicionais. ATENÇÃO: no código que você
+  // mandou, essas duas funções eram chamadas mas não existiam em
+  // nenhum lugar. Se elas vivem em outro arquivo do projeto, ok.
+  // Se não existem em lugar nenhum ainda, são as próximas a escrever.
+  if (typeof preencherPadraoEntrada === 'function') preencherPadraoEntrada();
+  if (typeof gerarInccInputs === 'function') gerarInccInputs();
+}
+
+/* ================================================================
+   03. CONDICOES FINANCIAMENTO (PRICE)
+   ================================================================ */
+const mod = {
+  camposPorcentagem: document.querySelectorAll("#jurosAno, #ipcaMensal")
+};
+
+// ERRO ORIGINAL: addEventListener foi chamado direto em
+// mod.camposPorcentagem, mas querySelectorAll devolve uma NodeList
+// (lista de elementos), não um elemento único. NodeList não tem
+// addEventListener — precisa percorrer com forEach e registrar o
+// listener em cada elemento, igual já é feito em camposCalculo e
+// dom.camposMoeda mais acima neste mesmo arquivo.
+mod.camposPorcentagem.forEach(campo => {
+  campo.addEventListener('input', (evento) => {
+    evento.target.value = Utils.numero.formatarPercentual(evento.target.value);
+
+    // Mesmo ajuste de cursor do campo correcaoParcelas: sem isso o
+    // Backspace fica preso apagando e recolocando o "%" sem nunca
+    // remover o dígito.
+    const posicaoAntesDoSimbolo = evento.target.value.length - 1;
+    evento.target.setSelectionRange(posicaoAntesDoSimbolo, posicaoAntesDoSimbolo);
+  });
+});
+
+/* ================================================================
+   04. AMORTIZAÇÃO EXTRA — alterna máscara conforme o tipo escolhido
+   ================================================================ */
+const tipoAmortSelect = document.getElementById('tipoAmort');
+const valorAmortExtraInput = document.getElementById('valorAmortExtra');
+const lblAmortExtra = document.getElementById('labelAmortExtra');
+
+// DECISÃO DE DESIGN (precisa de confirmação sua): ao trocar o tipo,
+// o campo é LIMPO em vez de tentar converter o número. "R$ 500"
+// trocado pra modo "%" não tem conversão sensata — manter o número
+// e só re-formatar ia virar "500,00%" do nada, o que é pior do que
+// limpar. Se preferir manter o valor numérico bruto na troca (ex:
+// 500 -> 500,00%), eu tiro a linha que zera o value.
+function aplicarModoAmortExtra() {
+  const modo = tipoAmortSelect?.value; // 'valor' ou 'pct'
+  if (!valorAmortExtraInput) return;
+
+  valorAmortExtraInput.value = '';
+  valorAmortExtraInput.placeholder = modo === 'pct' ? '0,00%' : 'R$ 0,00';
+
+  // Guarda explícita: lblAmortExtra?.innerHTML = ... não funciona —
+  // optional chaining não pode ficar do lado esquerdo de uma
+  // atribuição (é erro de sintaxe). Por isso o "if" em vez de "?.".
+  if (lblAmortExtra) {
+    lblAmortExtra.innerHTML = modo === 'pct' ? 'Amort. Extra (%)' : 'Amort. Extra (R$)';
+  }
+}
+
+tipoAmortSelect?.addEventListener('change', aplicarModoAmortExtra);
+
+valorAmortExtraInput?.addEventListener('input', (evento) => {
+  const modo = tipoAmortSelect?.value;
+
+  if (modo === 'pct') {
+    evento.target.value = Utils.numero.formatarPercentual(evento.target.value);
+    // mesmo ajuste de cursor dos outros campos percentuais, senão
+    // o Backspace trava no "%"
+    const posicaoAntesDoSimbolo = evento.target.value.length - 1;
+    evento.target.setSelectionRange(posicaoAntesDoSimbolo, posicaoAntesDoSimbolo);
+  } else {
+    evento.target.value = Utils.moeda.formatar(evento.target.value);
+  }
+});
+
+// Roda uma vez no carregamento pra garantir que o placeholder já
+// nasce coerente com o que tá selecionado no <select>, em vez de
+// só reagir depois que o usuário troca manualmente.
+aplicarModoAmortExtra();
+
+// Função de leitura pronta pra quem for usar esse valor em algum
+// cálculo depois — já devolve o número desformatado e identifica
+// se é valor fixo em reais ou percentual da prestação.
+function obterValorAmortExtra() {
+  const modo = tipoAmortSelect?.value;
+  const valorBruto = valorAmortExtraInput?.value || '';
+
+  if (modo === 'pct') {
+    return { tipo: 'pct', valor: Utils.numero.percentualParaDecimal(valorBruto) };
+  }
+  return { tipo: 'valor', valor: Utils.moeda.desformatar(valorBruto) };
+}
+
+/* ================================================================
+   05. CAMPOS NUMÉRICOS INTEIROS (prazo, intervaloAmort)
+   ================================================================ */
+// nParcelasEntrada já tinha essa máscara (seção 02). Faltava em prazo
+// e intervaloAmort — adicionado aqui sem tocar no listener de
+// nParcelasEntrada, que já faz mais coisa (dispara tentarGerarParcelas).
+document.querySelectorAll('#prazo, #intervaloAmort').forEach(campo => {
+  campo.addEventListener('input', (evento) => {
+    evento.target.value = Utils.numero.formatarQuantidade(evento.target.value);
+  });
+});
+
+/* ================================================================
+   06. MÁSCARA GENÉRICA MM/AAAA (via atributo data-mask="mmaaaa")
+   ================================================================ */
+// O HTML que você mandou já marca obraInicio/obraFim com
+// data-mask="mmaaaa". Em vez de cadastrar cada campo de data um por
+// um (como dataAssinatura faz hoje), esse loop pega qualquer input
+// com esse atributo — então um campo novo de MM/AAAA no futuro
+// funciona só adicionando o atributo no HTML, sem tocar em JS.
+// (dataAssinatura continua com o listener próprio que já existia;
+// se ele também tiver esse atributo no seu HTML, não tem problema —
+// a máscara é idempotente, só reformata o que já tá formatado.)
+document.querySelectorAll('[data-mask="mmaaaa"]').forEach(campo => {
+  campo.addEventListener('input', (evento) => {
+    evento.target.value = Utils.data.formatarMesAno(evento.target.value);
+  });
+});
+
+/* ================================================================
+   07. JUROS DE OBRA — gera 1 campo de R$ por mês de obra
+   ================================================================ */
+const domObra = {
+  obraInicio: document.getElementById('obraInicio'),
+  obraFim: document.getElementById('obraFim'),
+  jurosObraWrap: document.getElementById('jurosObraWrap'),
+  jurosObraGrid: document.getElementById('jurosObraGrid'),
+  infoObraTotal: document.getElementById('infoObraTotal')
+};
+
+// "06/2026" -> { mes: 6, ano: 2026 }. Retorna null se não tiver os
+// dois campos completos ou o mês for inválido (ex: "13/2026").
+function parseMesAno(texto) {
+  const match = /^(\d{2})\/(\d{4})$/.exec(String(texto || ''));
+  if (!match) return null;
+  const mes = parseInt(match[1], 10);
+  const ano = parseInt(match[2], 10);
+  if (mes < 1 || mes > 12) return null;
   return { mes, ano };
 }
 
-// Transforma {mes, ano} num índice absoluto de meses (ex: Jan/2024
-// = 2024*12+0) — facilita somar/subtrair meses sem ficar tratando
-// virada de ano na mão
-function indiceAbsoluto(p) {
-  return p.ano * 12 + (p.mes - 1);
-}
+// Lista todo mês entre início e fim, incluindo os dois extremos.
+// Ex: 11/2026 até 01/2027 -> [{11,2026}, {12,2026}, {1,2027}].
+// Retorna [] se as datas estiverem incompletas/inválidas ou se
+// fim vier antes de início.
+function calcularMesesObra(inicioTexto, fimTexto) {
+  const inicio = parseMesAno(inicioTexto);
+  const fim = parseMesAno(fimTexto);
+  if (!inicio || !fim) return [];
 
-// Caminho inverso: de um índice absoluto pro rótulo "Mar/2026"
-const NOMES_MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-function rotuloMesAno(indice) {
-  const ano = Math.floor(indice / 12);
-  const mes = ((indice % 12) + 12) % 12; // protege contra índice negativo
-  return `${NOMES_MESES[mes]}/${ano}`;
-}
+  const indiceInicio = inicio.ano * 12 + (inicio.mes - 1);
+  const indiceFim = fim.ano * 12 + (fim.mes - 1);
+  if (indiceFim < indiceInicio) return [];
 
-// Lê um texto e devolve número. Aceita "1500", "1500,50" ou
-// "R$ 1.500,50" — remove tudo que não for dígito/vírgula antes
-// de converter.
-function parseValorSimples(texto) {
-  if (!texto) return 0;
-  const limpo = texto.replace(/[^\d,]/g, '').replace(',', '.');
-  return parseFloat(limpo) || 0;
-}
-
-function formatMoney(valor) {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-// Mesma ideia do parseValorSimples, mas pra campos de % (ex: "0,80"
-// vira 0.008 em decimal — já pronto pra multiplicar em (1+variacao))
-function parsePercentSimples(texto) {
-  if (!texto) return 0;
-  const limpo = texto.replace(/[^\d,]/g, '').replace(',', '.');
-  return (parseFloat(limpo) || 0) / 100;
-}
-
-function formatPct(fator) {
-  // fator = 1.02 -> "+2,0%"; fator = 1 -> "—"
-  if (fator === 1) return '—';
-  return `+${((fator - 1) * 100).toFixed(1)}%`;
-}
-
-
-/* ------------------------------------------------------------
-   3. PARCELAS DA ENTRADA (Cláusula 2)
-
-   Esses inputs não existem até o usuário informar quantas
-   parcelas a entrada vai ter. A cada mudança em
-   "nParcelasEntrada", o grid é reconstruído do zero — é a forma
-   mais simples de manter a quantidade de campos sempre igual ao
-   número digitado, sem ficar comparando "tinha 5, agora tem 3,
-   remove 2"...
-
-   A correção segue a Cláusula 4.1 do contrato real (INCC-DI/FGV,
-   até o Habite-se): cada parcela usa a variação acumulada do
-   índice entre o "índice-base" (2º mês anterior à assinatura) e
-   o índice do 2º mês anterior ao vencimento da própria parcela.
-   Isso é só a defasagem de 2 meses deslocando a janela — não tem
-   nada além disso de "fórmula secreta". Como o índice-base não
-   tem variação própria (é só o ponto de partida), a 1ª parcela
-   nunca corrige (fator 1); a 2ª usa 1 mês de variação digitada,
-   a 3ª usa 2 meses, e assim por diante — sempre os primeiros N
-   valores do grid do INCC, na ordem em que foram digitados.
-
-   SIMPLIFICAÇÃO ASSUMIDA: isso cobre só a fase INCC-DI. Se a
-   entrada se estender além do Habite-se (pouco provável, já que
-   entrada normalmente termina antes da obra acabar), faltaria
-   trocar para IPCA — não implementado aqui.
-   ------------------------------------------------------------ */
-
-function setupEntradaListener() {
-  document.getElementById('nParcelasEntrada')
-    .addEventListener('input', gerarParcelasEntrada);
-
-  // Quando o valor padrão muda, preenche os campos de parcela
-  // que ainda estiverem vazios
-  document.getElementById('valorPadraoParcelaEntrada')
-    .addEventListener('input', preencherPadraoEntrada);
-
-  // Mesma ideia, mas pra taxa de correção do INCC-DI — sem isso,
-  // quem não digitar mês a mês fica com 0% e a correção nunca
-  // aparece (foi exatamente o que confundiu no teste)
-  document.getElementById('inccTaxaPadrao')
-    .addEventListener('input', preencherPadraoIncc);
-
-  // A Data de Assinatura também redefine a janela de meses do
-  // grid do INCC-DI (ela é a referência do índice-base)
-  document.getElementById('dataAssinatura')
-    .addEventListener('input', gerarInccInputs);
-
-  // Ato, FGTS e Extra só afetam o resumo/tabelas, não a estrutura
-  ['valorAto', 'valorFgts', 'valorExtra'].forEach((id) => {
-    document.getElementById(id).addEventListener('input', atualizarTudoEntrada);
-  });
-}
-
-function gerarParcelasEntrada() {
-  const qtd  = parseInt(document.getElementById('nParcelasEntrada').value) || 0;
-  const wrap = document.getElementById('parcelasEntradaWrap');
-  const grid = document.getElementById('parcelasEntradaGrid');
-
-  // Sem quantidade válida -> esconde tudo e limpa o grid
-  if (qtd <= 0) {
-    wrap.classList.remove('visible');
-    grid.innerHTML = '';
-    gerarInccInputs();   // a janela do INCC depende da quantidade também
-    return;
+  const meses = [];
+  for (let i = indiceInicio; i <= indiceFim; i++) {
+    meses.push({ mes: (i % 12) + 1, ano: Math.floor(i / 12) });
   }
-
-  grid.innerHTML = '';
-  for (let i = 1; i <= qtd; i++) {
-    const campo = document.createElement('div');
-    campo.className = 'field';
-    campo.innerHTML = `
-      <label>Parcela ${i}</label>
-      <input type="text"
-             class="parcela-entrada-input"
-             id="parcelaEntrada_${i}"
-             placeholder="R$ 0,00">
-    `;
-    grid.appendChild(campo);
-  }
-
-  // Cada parcela nova também atualiza o resumo/tabelas ao ser digitada
-  grid.querySelectorAll('.parcela-entrada-input').forEach((input) => {
-    input.addEventListener('input', atualizarTudoEntrada);
-  });
-
-  wrap.classList.add('visible');
-  preencherPadraoEntrada();   // já aplica o valor padrão, se houver
-  gerarInccInputs();          // reconstrói a janela de meses do INCC-DI
+  return meses;
 }
 
-// Constrói o grid de variação mensal do INCC-DI. Precisa de qtd >= 2
-// (com 1 parcela só, não existe variação de índice pra digitar — ela
-// nunca corrige, é o próprio mês-base) e de uma Data de Assinatura
-// válida pra saber os rótulos de mês/ano de cada campo.
-function gerarInccInputs() {
-  const assinatura = parseMmAaaa(document.getElementById('dataAssinatura').value);
-  const qtd  = parseInt(document.getElementById('nParcelasEntrada').value) || 0;
-  const wrap = document.getElementById('inccWrap');
-  const grid = document.getElementById('inccGrid');
-
-  if (!assinatura || qtd < 2) {
-    wrap.classList.remove('visible');
-    grid.innerHTML = '';
-    atualizarTudoEntrada();
-    return;
-  }
-
-  // Índice-base = 2º mês anterior à assinatura (cláusula 4.1.1.a).
-  // A janela de campos vai de (índiceBase+1) até (índiceBase+qtd-1),
-  // que são exatamente os meses usados pela última parcela.
-  const indiceBase = indiceAbsoluto(assinatura) - 2;
-
-  grid.innerHTML = '';
-  for (let k = 0; k < qtd - 1; k++) {
-    const mes = indiceBase + 1 + k;
-
-    const campo = document.createElement('div');
-    campo.className = 'field';
-    campo.innerHTML = `
-      <label>${rotuloMesAno(mes)}</label>
-      <input type="text"
-             class="incc-input"
-             id="incc_${k}"
-             placeholder="0,80">
-    `;
-    grid.appendChild(campo);
-  }
-
-  grid.querySelectorAll('.incc-input').forEach((input) => {
-    input.addEventListener('input', atualizarTudoEntrada);
-  });
-
-  wrap.classList.add('visible');
-  preencherPadraoIncc();      // já aplica a taxa padrão, se houver
-  atualizarTudoEntrada();     // garante o refresh mesmo sem taxa padrão definida
-}
-
-// Preenche com a taxa padrão só os campos do INCC ainda vazios —
-// igual ao preencherPadraoEntrada(), não sobrescreve o que já foi
-// digitado mês a mês com o índice real
-function preencherPadraoIncc() {
-  const padrao = document.getElementById('inccTaxaPadrao').value;
-  if (!padrao) return;
-
-  document.querySelectorAll('.incc-input').forEach((input) => {
-    if (!input.value) input.value = padrao;
-  });
-
-  atualizarTudoEntrada();
-}
-
-// Preenche com o valor padrão só as parcelas ainda vazias —
-// não sobrescreve o que o usuário já digitou manualmente
-function preencherPadraoEntrada() {
-  const padrao = document.getElementById('valorPadraoParcelaEntrada').value;
-  if (!padrao) return;
-
-  document.querySelectorAll('.parcela-entrada-input').forEach((input) => {
-    if (!input.value) input.value = padrao;
-  });
-
-  atualizarTudoEntrada();
-}
-
-// Atalho: tudo que precisa ser recalculado quando algo da
-// Entrada muda — resumo em texto + as duas tabelas que dependem
-// dela (Entrada e Obras+Entrada)
-function atualizarTudoEntrada() {
-  atualizarInfoEntradaDetalhe();
-  renderizarTabelaEntrada();
-  renderizarTabelaObrasEntrada();
-}
-
-// Soma Ato + FGTS + Extra + todas as parcelas digitadas (já
-// corrigidas) e mostra o total na linha de informação — só
-// exibição, sem abater nada de fato
-function atualizarInfoEntradaDetalhe() {
-  const info = document.getElementById('infoEntradaDetalhe');
-  const itens = montarItensEntrada();
-
-  if (itens.length === 0) {
-    info.innerHTML = '';
-    return;
-  }
-
-  const ato    = itens.find(i => i.tipo === 'Ato')?.corrigido    || 0;
-  const fgts   = itens.find(i => i.tipo === 'FGTS')?.corrigido   || 0;
-  const extra  = itens.find(i => i.tipo === 'Extra')?.corrigido  || 0;
-  const parcelas = itens.filter(i => i.tipo === 'Parcela').reduce((s, i) => s + i.corrigido, 0);
-  const total = itens.reduce((s, i) => s + i.corrigido, 0);
-
-  info.innerHTML = `
-    Ato: <span>${formatMoney(ato)}</span> ·
-    FGTS: <span>${formatMoney(fgts)}</span> ·
-    Extra: <span>${formatMoney(extra)}</span> ·
-    Parcelas: <span>${formatMoney(parcelas)}</span> ·
-    Total da entrada: <span>${formatMoney(total)}</span>
-  `;
-}
-
-// Monta a lista de itens da entrada (ato/fgts/extra/parcelas) já
-// com mês/ano e valor corrigido — usada pela tabela da aba
-// "Entrada" e pelo resumo em texto, pra não calcular tudo 2x
-function montarItensEntrada() {
-  const assinatura = parseMmAaaa(document.getElementById('dataAssinatura').value);
-  if (!assinatura) return []; // sem data de assinatura não dá pra datar nada
-
-  const mesBase = indiceAbsoluto(assinatura);
-  const itens = [];
-
-  const ato   = parseValorSimples(document.getElementById('valorAto').value);
-  const fgts  = parseValorSimples(document.getElementById('valorFgts').value);
-  const extra = parseValorSimples(document.getElementById('valorExtra').value);
-
-  // Pontuais: pagos no mês da assinatura, sem correção (fator 1)
-  if (ato   > 0) itens.push({ tipo: 'Ato',   mes: mesBase, base: ato,   fator: 1, corrigido: ato });
-  if (fgts  > 0) itens.push({ tipo: 'FGTS',  mes: mesBase, base: fgts,  fator: 1, corrigido: fgts });
-  if (extra > 0) itens.push({ tipo: 'Extra', mes: mesBase, base: extra, fator: 1, corrigido: extra });
-
-  // Parcelas: a 1ª cai no mês da assinatura (fator 1). Cada parcela
-  // seguinte acumula mais um mês de variação do INCC-DI digitado —
-  // a parcela N usa exatamente os primeiros (N-1) campos do grid,
-  // na ordem em que aparecem (ver gerarInccInputs() pra entender
-  // por que isso reproduz a defasagem de 2 meses do contrato).
-  const variacoesIncc = [...document.querySelectorAll('.incc-input')]
-    .map((input) => parsePercentSimples(input.value));
-
-  document.querySelectorAll('.parcela-entrada-input').forEach((input, i) => {
-    const base = parseValorSimples(input.value);
-
-    let fator = 1;
-    for (let k = 0; k < i; k++) {
-      fator *= (1 + (variacoesIncc[k] || 0));
-    }
-    fator = Math.max(fator, 1); // cláusula 4.1.1.d — nunca deflaciona abaixo do original
-
-    itens.push({
-      tipo: 'Parcela',
-      label: `Parcela ${i + 1}`,
-      mes: mesBase + i,
-      base,
-      fator,
-      corrigido: base * fator
-    });
-  });
-
-  return itens;
-}
-
-// Preenche a aba "Entrada" do Anexo III com ato/fgts/extra/parcelas
-function renderizarTabelaEntrada() {
-  const tbody = document.getElementById('tableBodyEntrada');
-  const itens = montarItensEntrada();
-
-  if (itens.length === 0) {
-    tbody.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-  let total = 0;
-
-  itens.forEach((item) => {
-    total += item.corrigido;
-    html += `
-      <tr>
-        <td>${item.label || item.tipo}</td>
-        <td>${rotuloMesAno(item.mes)}</td>
-        <td>${formatMoney(item.base)}</td>
-        <td>${formatPct(item.fator)}</td>
-        <td>${formatMoney(item.corrigido)}</td>
-      </tr>
-    `;
-  });
-
-  html += `
-    <tr class="row-total">
-      <td colspan="4">Total da Entrada</td>
-      <td>${formatMoney(total)}</td>
-    </tr>
-  `;
-
-  tbody.innerHTML = html;
-}
-
-
-/* ------------------------------------------------------------
-   4. JUROS DE OBRA (Cláusula 4)
-
-   Também nascem escondidos. Só aparecem quando Início e Fim da
-   obra (MM/AAAA) formam um período válido — aí é gerado um
-   input por mês dentro desse intervalo, com o rótulo já
-   mostrando o mês/ano correspondente.
-   ------------------------------------------------------------ */
-
-function setupObraListener() {
-  document.getElementById('obraInicio').addEventListener('input', gerarJurosObraInputs);
-  document.getElementById('obraFim').addEventListener('input', gerarJurosObraInputs);
-}
-
+// DECISÃO DE DESIGN (mesma lógica já usada nas parcelas de entrada):
+// qualquer mudança em obraInicio/obraFim REGENERA a grade inteira,
+// apagando valores de juros já digitados manualmente nos meses que
+// sobrarem. Não tem como evitar isso sem guardar valor por mês/ano
+// em vez de por posição — se isso for um problema na prática
+// (ex: usuário ajusta o fim da obra em 1 mês depois de preencher 20
+// campos), me avisa que mudo pra chave mês/ano em vez de índice.
 function gerarJurosObraInputs() {
-  const inicio = parseMmAaaa(document.getElementById('obraInicio').value);
-  const fim    = parseMmAaaa(document.getElementById('obraFim').value);
-  const wrap   = document.getElementById('jurosObraWrap');
-  const grid   = document.getElementById('jurosObraGrid');
+  const meses = calcularMesesObra(domObra.obraInicio?.value, domObra.obraFim?.value);
 
-  let totalMeses = 0;
-  if (inicio && fim) {
-    totalMeses = indiceAbsoluto(fim) - indiceAbsoluto(inicio) + 1;
-  }
-
-  // Período inválido, incompleto ou invertido -> esconde e limpa
-  if (!inicio || !fim || totalMeses <= 0) {
-    wrap.classList.remove('visible');
-    grid.innerHTML = '';
-    atualizarTudoObras();
+  if (meses.length === 0 || !domObra.jurosObraGrid) {
+    domObra.jurosObraWrap?.classList.remove('visible');
+    if (domObra.jurosObraGrid) domObra.jurosObraGrid.innerHTML = '';
+    if (domObra.infoObraTotal) domObra.infoObraTotal.textContent = '';
     return;
   }
 
-  grid.innerHTML = '';
-  for (let i = 0; i < totalMeses; i++) {
-    const indice = indiceAbsoluto(inicio) + i;
+  domObra.jurosObraGrid.innerHTML = '';
 
+  // Campos nascem vazios (placeholder "R$ 0,00") — diferente da
+  // entrada, aqui não tem correção composta pra pré-calcular. O valor
+  // de cada mês vem da curva teórica da construtora, que só o usuário
+  // tem em mãos. Label mostra o mês/ano real (ex: "06/2026"), não
+  // "Mês 1", pra facilitar bater com a tabela da construtora.
+  meses.forEach(({ mes, ano }, indice) => {
+    const mesFormatado = String(mes).padStart(2, '0');
     const campo = document.createElement('div');
     campo.className = 'field';
     campo.innerHTML = `
-      <label>${rotuloMesAno(indice)}</label>
+      <label>${mesFormatado}/${ano}</label>
       <input type="text"
              class="juros-obra-input"
-             id="jurosObra_${i}"
+             id="jurosObra_${indice + 1}"
              placeholder="R$ 0,00">
     `;
-    grid.appendChild(campo);
-  }
-
-  grid.querySelectorAll('.juros-obra-input').forEach((input) => {
-    input.addEventListener('input', atualizarTudoObras);
+    domObra.jurosObraGrid.appendChild(campo);
   });
 
-  wrap.classList.add('visible');
-  atualizarTudoObras();
-}
-
-// Atalho: tudo que precisa ser recalculado quando algo da Obra
-// muda — resumo em texto + as duas tabelas que dependem dela
-function atualizarTudoObras() {
-  atualizarInfoObra();
-  renderizarTabelaObras();
-  renderizarTabelaObrasEntrada();
-}
-
-// Soma os juros de obra já digitados — de novo, só exibição
-function atualizarInfoObra() {
-  const info = document.getElementById('infoObraTotal');
-  const itens = montarItensObra();
-
-  if (itens.length === 0) {
-    info.innerHTML = '';
-    return;
-  }
-
-  const total = itens.reduce((s, i) => s + i.valor, 0);
-  info.innerHTML = `Total de juros de obra informado: <span>${formatMoney(total)}</span>`;
-}
-
-// Monta a lista de meses de obra com valor digitado — usada pela
-// tabela da aba "Obras" e pelo cruzamento "Obras+Entrada"
-function montarItensObra() {
-  const inicio = parseMmAaaa(document.getElementById('obraInicio').value);
-  if (!inicio) return [];
-
-  const mesBase = indiceAbsoluto(inicio);
-  const itens = [];
-
-  document.querySelectorAll('.juros-obra-input').forEach((input, i) => {
-    const valor = parseValorSimples(input.value);
-    if (valor > 0) {
-      itens.push({ mes: mesBase + i, valor });
-    }
-  });
-
-  return itens;
-}
-
-// Preenche a aba "Obras" do Anexo III com os juros mês a mês
-function renderizarTabelaObras() {
-  const tbody = document.getElementById('tableBodyObras');
-  const itens = montarItensObra();
-
-  if (itens.length === 0) {
-    tbody.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-  let acumulado = 0;
-
-  itens.forEach((item) => {
-    acumulado += item.valor;
-    html += `
-      <tr>
-        <td>${rotuloMesAno(item.mes)}</td>
-        <td>${formatMoney(item.valor)}</td>
-        <td>${formatMoney(acumulado)}</td>
-      </tr>
-    `;
-  });
-
-  html += `
-    <tr class="row-total">
-      <td>Total</td>
-      <td>${formatMoney(acumulado)}</td>
-      <td></td>
-    </tr>
-  `;
-
-  tbody.innerHTML = html;
-}
-
-
-/* ------------------------------------------------------------
-   5. OBRAS + ENTRADA — cruzamento por mês (aba 3 do Anexo III)
-
-   Pega os itens já calculados pela Entrada e pelos Juros de
-   Obra e monta uma linha do tempo única, mês a mês, mostrando
-   os dois lado a lado. Não inventa nenhuma conta nova — só
-   organiza o que já existe nas duas seções anteriores.
-   ------------------------------------------------------------ */
-
-function renderizarTabelaObrasEntrada() {
-  const tbody = document.getElementById('tableBodyObrasEntrada');
-
-  const itensEntrada = montarItensEntrada(); // [{mes, corrigido, ...}]
-  const itensObra    = montarItensObra();    // [{mes, valor}]
-
-  if (itensEntrada.length === 0 && itensObra.length === 0) {
-    tbody.innerHTML = '';
-    return;
-  }
-
-  // Agrupa por mês absoluto, somando entrada e obra separadamente
-  const porMes = new Map(); // mes -> { entrada, obra }
-
-  itensEntrada.forEach((item) => {
-    const atual = porMes.get(item.mes) || { entrada: 0, obra: 0 };
-    atual.entrada += item.corrigido;
-    porMes.set(item.mes, atual);
-  });
-
-  itensObra.forEach((item) => {
-    const atual = porMes.get(item.mes) || { entrada: 0, obra: 0 };
-    atual.obra += item.valor;
-    porMes.set(item.mes, atual);
-  });
-
-  // Preenche os meses "vazios" no meio do intervalo, pra mostrar
-  // a linha do tempo cheia, não só os meses com pagamento
-  const meses = [...porMes.keys()];
-  const min = Math.min(...meses);
-  const max = Math.max(...meses);
-
-  let html = '';
-  let totalEntrada = 0;
-  let totalObra = 0;
-
-  for (let m = min; m <= max; m++) {
-    const valores = porMes.get(m) || { entrada: 0, obra: 0 };
-    const totalMes = valores.entrada + valores.obra;
-    totalEntrada += valores.entrada;
-    totalObra += valores.obra;
-
-    html += `
-      <tr>
-        <td>${rotuloMesAno(m)}</td>
-        <td>${valores.entrada > 0 ? formatMoney(valores.entrada) : '—'}</td>
-        <td>${valores.obra > 0 ? formatMoney(valores.obra) : '—'}</td>
-        <td>${formatMoney(totalMes)}</td>
-      </tr>
-    `;
-  }
-
-  html += `
-    <tr class="row-total">
-      <td>Total</td>
-      <td>${formatMoney(totalEntrada)}</td>
-      <td>${formatMoney(totalObra)}</td>
-      <td>${formatMoney(totalEntrada + totalObra)}</td>
-    </tr>
-  `;
-
-  tbody.innerHTML = html;
-}
-
-
-/* ------------------------------------------------------------
-   6. ABAS DO ANEXO III
-   Só troca qual <div class="tab-panel"> fica visível — quem
-   preenche cada uma são as funções renderizar*() de cima
-   (a aba "Financiamento" fica vazia até calcular() existir).
-   ------------------------------------------------------------ */
-
-function setupTabs() {
-  document.querySelectorAll('.tab-btn').forEach((botao) => {
-    botao.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach((p) => p.style.display = 'none');
-
-      botao.classList.add('active');
-      document.getElementById(botao.dataset.target).style.display = '';
+  domObra.jurosObraGrid.querySelectorAll('.juros-obra-input').forEach((input) => {
+    input.addEventListener('input', (evento) => {
+      evento.target.value = Utils.moeda.formatar(evento.target.value);
+      atualizarInfoObraTotal();
     });
   });
+
+  domObra.jurosObraWrap?.classList.add('visible');
+  atualizarInfoObraTotal();
 }
 
+function atualizarInfoObraTotal() {
+  if (!domObra.infoObraTotal || !domObra.jurosObraGrid) return;
 
-/* ------------------------------------------------------------
-   7. EXPORTAÇÃO (PDF / Excel)
-   Os dois leem o HTML já renderizado na tela — não dependem de
-   nenhuma lógica de cálculo financeiro, só do que já está nos
-   cards e nas tabelas no momento do clique.
-   ------------------------------------------------------------ */
-
-// Lê os cards do Anexo I (Resumo) e gera um PDF simples com
-// "label: valor" linha a linha
-function exportarResumoPDF() {
-  if (!window.jspdf) {
-    console.warn('jsPDF não carregou — verifique a conexão com o CDN.');
-    return;
-  }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  let y = 20;
-
-  doc.setFontSize(16);
-  doc.text('Resumo da Simulação — Financiamento Imobiliário', 14, y);
-  y += 8;
-
-  doc.setFontSize(10);
-  doc.setTextColor(120);
-  doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 14, y);
-  y += 12;
-
-  doc.setTextColor(20);
-  doc.setFontSize(12);
-
-  const cards = document.querySelectorAll('#statsGrid .stat-card');
-
-  if (cards.length === 0) {
-    doc.text('Nenhum resultado calculado ainda.', 14, y);
-  } else {
-    cards.forEach((card) => {
-      const label = card.querySelector('.stat-label')?.textContent.trim() || '';
-      const value = card.querySelector('.stat-value')?.textContent.trim() || '';
-      doc.text(`${label}: ${value}`, 14, y);
-      y += 8;
-      if (y > 280) { doc.addPage(); y = 20; } // pula de página se não couber
-    });
-  }
-
-  doc.save('resumo-simulacao.pdf');
-}
-
-// Exporta as 4 tabelas do Anexo III num único Excel, cada uma
-// numa planilha. table_to_sheet lê o <table> direto do DOM,
-// funciona mesmo com a aba escondida (display:none)
-function exportarTabelas() {
-  if (!window.XLSX) {
-    console.warn('SheetJS não carregou — verifique a conexão com o CDN.');
-    return;
-  }
-
-  const abas = [
-    { id: 'tableEntrada',       nome: 'Entrada' },
-    { id: 'tableObras',         nome: 'Obras' },
-    { id: 'tableObrasEntrada',  nome: 'Obras+Entrada' },
-    { id: 'tableFinanciamento', nome: 'Financiamento' }
-  ];
-
-  const wb = XLSX.utils.book_new();
-
-  abas.forEach(({ id, nome }) => {
-    const tabela = document.getElementById(id);
-    const ws = XLSX.utils.table_to_sheet(tabela);
-    XLSX.utils.book_append_sheet(wb, ws, nome);
+  const inputs = domObra.jurosObraGrid.querySelectorAll('.juros-obra-input');
+  let total = 0;
+  inputs.forEach((input) => {
+    total += Utils.moeda.desformatar(input.value);
   });
 
-  XLSX.writeFile(wb, 'tabelas-financiamento.xlsx');
+  const sufixoMes = inputs.length === 1 ? 'mês' : 'meses';
+  domObra.infoObraTotal.textContent =
+    `Total de juros de obra: ${Utils.moeda.formatar(total.toFixed(2))} (${inputs.length} ${sufixoMes})`;
 }
 
+// Registrado DEPOIS da máscara genérica MM/AAAA (seção 06) — assim,
+// quando o input dispara, o valor já chega mascarado/formatado antes
+// de calcularMesesObra tentar ler ele.
+domObra.obraInicio?.addEventListener('input', gerarJurosObraInputs);
+domObra.obraFim?.addEventListener('input', gerarJurosObraInputs);
 
-/* ------------------------------------------------------------
-   8. CALCULAR() — propositalmente vazio
-   O motor de cálculo (PRICE, correção anual em janeiro, juros
-   compostos, amortização extra etc.) é a parte que você vai
-   escrever. Esse stub só evita erro no console quando "Simular
-   Financiamento →" for clicado, e também não preenche a aba
-   "Financiamento" do Anexo III.
-   ------------------------------------------------------------ */
-function calcular() {
-  console.warn('calcular() ainda não foi implementado — esse é o motor que você vai escrever.');
-}
+// CALCULAR
+/*
+1. Calcula o saldo devedor
+Que é o valor financiado da input #valorFinanciado ai tem que transformar em moeda
+2. Saldo devedor deve ser corrigido mensalmente ai ve as options selecionado para ver se so começa correcao com IPCA MAIS A TAXA DE JUROS AO ANO ou se ela ja tem correcao durante assinatura do contrato (se puder colcoar campo pedindo data de assinatura do contrato que ai a correcao é desde assinatura ne) 
+3. valor inicial da prestacao com mascara de valor
+4. da parcela mensal que é contada como no pagamento, do valor da parcela ele considera 20% desse valor da parcela  descontar do saldo devedor
+5. sobre o amort extra é um valor juntado todo mes, mas ai so é pago a cada intervalo de amortizacao que pode ser de no maximo 12 meses
+6. ai o valor da amort extra é descontado 100% do saldo devedor
+ai no resumo tem que falar todas informaçoes, valores, prazos, tempo econimizado, valor econimizado que é calculado pela subtracao do valor total que seria pago que seria valor da prestação vezes total de prazo pelo valor total pago ate quitar o saldo devedor e ai calcula o tempo economizado igual sabe
+ai monta a tabelas com os valores que foram sendo calculados
+e faz botoes de exportar os trem
 
+*/
 
-/* ------------------------------------------------------------
-   9. INICIALIZAÇÃO
-   ------------------------------------------------------------ */
+/* ================================================================
+   INICIALIZAÇÃO
+   ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   iniciarTermos();
-  setupEntradaListener();
-  setupObraListener();
-  setupTabs();
 });

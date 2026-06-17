@@ -74,6 +74,14 @@
 
         <!-- Campo readonly: calculado por syncFinanciado() em tempo real -->
         <div class="field">
+          <label>Valor Bruto Financiado (R$)</label>
+          <input type="text" id="valorBrutoFinanciado"
+                 placeholder="Calculado automaticamente"
+                 data-mask="money" readonly>
+        </div>
+
+        <!-- Campo readonly: calculado por syncFinanciado() em tempo real -->
+        <div class="field">
           <label>Valor Financiado (R$)</label>
           <input type="text" id="valorFinanciado"
                  placeholder="Calculado automaticamente"
@@ -146,12 +154,21 @@
 
         <div class="field">
           <label>
-            Valor Padrão das Parcelas (R$)
-            <span style="color:var(--muted);font-size:0.7em">— opcional</span>
+            Valor inicial das Parcelas (R$)
           </label>
           <!-- Quando preenchido, preenche TODOS os inputs de parcela com esse valor -->
-          <input type="text" id="valorPadraoParcelaEntrada"
+          <input type="text" id="valorInicialParcelaEntrada"
                  placeholder="R$ 2.000,00" data-mask="money">
+        </div>
+
+        <div class="field">
+          <label>
+            Taxa Correção             
+            <span style="color:var(--muted);font-size:0.7em">— parcela entrada</span>
+          </label>
+          <!-- data-mask="int" → só aceita números inteiros -->
+          <!-- Quando preenchido, gerarParcelasEntrada() cria inputs dinâmicos abaixo -->
+          <input type="text" id="correcaoParcelas" placeholder="Ex: 36" data-mask="int">
         </div>
 
       </div>
@@ -166,7 +183,7 @@
             <line x1="12" y1="8" x2="12" y2="12"/>
             <line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          Informe o valor de cada parcela da entrada. Valores em branco usam o padrão acima.
+          Campos dos valores de cada parcela são calculadas automaticamente, mas você pode alterar os valores manualmente também.
         </div>
         <!-- Grid gerado dinamicamente por gerarParcelasEntrada() -->
         <div class="parcelas-entrada-grid" id="parcelasEntradaGrid"></div>
@@ -249,7 +266,7 @@
           <!-- Muda o comportamento do campo abaixo via setupAmortTypeListener() -->
           <select id="tipoAmort">
             <option value="valor">Valor fixo (R$)</option>
-            <option value="pct">% do saldo devedor</option>
+            <option value="pct">% da prestação</option>
           </select>
         </div>
 
@@ -265,6 +282,17 @@
           <label>Intervalo de Amortização (meses)</label>
           <input type="text" id="intervaloAmort"
                  placeholder="1" data-mask="int" value="1">
+        </div>
+
+        <div class="field">
+          <label>Valor inicial da prestação</label>
+          <input type="text" id="intervaloAmort"
+                 placeholder="1" data-mask="int" value="1">
+                  <input type="radio" id="basico" name="plano" value="basic">
+                  <label for="semCorrObra">Com correcao pre obras</label><br>
+
+                  <input type="radio" id="padrinho" name="plano" value="premium" checked>
+                  <label for="semCorrObra">Sem correcao pre obras</label><br>
         </div>
 
       </div>
