@@ -299,6 +299,68 @@ header h1 {
 
 .field select option { background: var(--surface); }
 
+/* Radio "cartão selecionável" — usado na escolha de correção
+   pré-obras (Cláusula 3). Mesma borda/raio dos inputs normais, com
+   indicador customizado em vez do círculo nativo do navegador, pra
+   não destoar da paleta verde-cédula do resto do formulário. */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.radio-option:hover { border-color: rgba(27,110,61,0.4); }
+
+.radio-option:has(input:checked) {
+  border-color: var(--brass);
+  background: rgba(27,110,61,0.06);
+}
+
+.radio-option input[type="radio"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.radio-option input[type="radio"]:checked { border-color: var(--brass); }
+
+.radio-option input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--brass);
+}
+
+.radio-option input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(27,110,61,0.15);
+}
+
 /* Container que aparece/some — usado por Parcelas da Entrada, INCC-DI
    e Juros de Obra (3 blocos com o mesmo comportamento de exibição) */
 .dynamic-wrap {

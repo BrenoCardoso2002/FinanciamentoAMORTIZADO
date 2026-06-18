@@ -6,59 +6,72 @@
    navegador (F12 → Console) enquanto você testa, pra não ter que
    digitar tudo na mão de novo a cada reload.
 
+   CORRIGIDO: a versão anterior quebrava na hora — chamava
+   getElementById('valorPadraoParcelaEntrada'), que nunca existiu
+   (o id real é valorInicialParcelaEntrada), e em seguida chamava
+   preencherPadraoEntrada(), preencherPadraoIncc() e
+   atualizarTudoObras(), três funções que nunca foram escritas em
+   nenhum lugar do script.js. Resultado: travava ali, 0 parcelas
+   geradas, #valorFinanciado nunca calculado, calcular() teria
+   recusado com "Faltam dados" se você tivesse clicado no botão.
+
    Como usar:
      1. Abre o Index.html no navegador
-     2. Aceita os Termos de Uso (ou não — as funções rodam mesmo
-        com o simulador "locked", já que manipulam o DOM direto,
-        não dependem de clique de mouse)
+     2. Aceita os Termos de Uso (ou não — o preenchimento funciona
+        igual, já que manipula o DOM direto, não depende de clique)
      3. F12 → aba Console → cola o conteúdo deste arquivo → Enter
+     4. Já roda calcular() no final — os resultados aparecem direto
    ============================================================ */
 
 (function preencherSimulador() {
   console.log("🚀 Iniciando preenchimento automático...");
 
-  // Campos sem nenhum comportamento dinâmico associado ainda
-  // (Cláusula 3 inteira é decorativa por enquanto — sem calcular() não reage a nada)
-  const camposSimples = {
-    valorImovel: '330.000,00',
-    valorSubsidio: '0,00',
-    prazo: '420',
-    jurosAno: '12,00',
-    ipcaMensal: '0,50',
-    valorAmortExtra: '500,00',
-    intervaloAmort: '3'
-  };
-  for (const [id, valor] of Object.entries(camposSimples)) {
-    const input = document.getElementById(id);
-    if (input) input.value = valor;
-  }
-  document.getElementById('tipoAmort').value = 'valor';
+  // ── Cláusula 1 — Dados do Imóvel ───────────────────────────────
+  document.getElementById('valorImovel').value = '330.000,00';
+  document.getElementById('valorSubsidio').value = '0,00';
 
-  // Entrada (Cláusula 2)
+  // ── Cláusula 2 — Entrada ────────────────────────────────────────
   document.getElementById('dataAssinatura').value = '05/2026';
   document.getElementById('valorAto').value = '5.000,00';
   document.getElementById('valorFgts').value = '9.375,21';
   document.getElementById('valorExtra').value = '0,00';
+
+  // gerarParcelasEntrada() lê nParcelasEntrada + valorInicialParcelaEntrada
+  // direto do DOM, então os dois precisam estar preenchidos ANTES de
+  // chamar a função (a versão anterior chamava antes de preencher e
+  // a função não gerava nada).
   document.getElementById('nParcelasEntrada').value = '25';
-  gerarParcelasEntrada();   // já cria as 25 parcelas E o grid do INCC-DI junto
+  document.getElementById('valorInicialParcelaEntrada').value = '1.000,00';
+  document.getElementById('correcaoParcelas').value = '0,50%';
+  gerarParcelasEntrada(); // já chama syncFinanciado() no final
 
-  document.getElementById('valorPadraoParcelaEntrada').value = '1.000,00';
-  preencherPadraoEntrada();
+  // ── Cláusula 3 — Condições do Financiamento (PRICE) ─────────────
+  document.getElementById('prazo').value = '420';
+  document.getElementById('jurosAno').value = '12,00%';
+  document.getElementById('ipcaMensal').value = '0,50%';
+  document.getElementById('inccTaxaPadrao').value = '0,80%'; // reaproveitado pro saldo na obra
 
-  // Taxa padrão do INCC-DI — preenche o grid inteiro de uma vez
-  // (no contrato real, o ideal é digitar mês a mês com o índice
-  // publicado pela FGV, mas pra teste rápido um valor médio serve)
-  document.getElementById('inccTaxaPadrao').value = '0,80';
-  preencherPadraoIncc();
+  document.getElementById('tipoAmort').value = 'valor';
+  if (typeof aplicarModoAmortExtra === 'function') aplicarModoAmortExtra();
+  document.getElementById('valorAmortExtra').value = '500,00';
+  document.getElementById('intervaloAmort').value = '3';
 
-  // Juros de Obra (Cláusula 4)
+  // Contrato real tem correção do saldo durante a obra (igual ao
+  // Python.py) — marca "Com correção pré-obras". Se quiser testar
+  // sem essa correção, troca pra corrigirObraNao.
+  document.getElementById('corrigirObraSim').checked = true;
+  document.getElementById('corrigirObraNao').checked = false;
+
+  // ── Cláusula 4 — Juros de Obra ───────────────────────────────────
   document.getElementById('obraInicio').value = '08/2026';
   document.getElementById('obraFim').value = '01/2027';
-  gerarJurosObraInputs();
+  gerarJurosObraInputs(); // cria os campos do período — precisa vir
+                          // depois de obraInicio/obraFim preenchidos
   document.querySelectorAll('.juros-obra-input').forEach((input, i) => {
     input.value = (390 + i * 60).toFixed(2).replace('.', ',');
   });
-  atualizarTudoObras();
 
-  console.log("✅ Campos preenchidos. Confira as abas Entrada/Obras/Obras+Entrada no Anexo III.");
+  console.log("✅ Campos preenchidos. Calculando...");
+  calcular();
+  console.log("✅ Pronto. Resultados na tela (Resumo, Gráfico e as 4 abas de tabela).");
 })();
