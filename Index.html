@@ -210,7 +210,12 @@
 
         <!-- Taxa padrão: preenche o grid inteiro de uma vez, igual ao
              "Valor Padrão das Parcelas" — sem isso, ficar sem digitar
-             em cada mês faz a correção ficar parada em 0% -->
+             em cada mês faz a correção ficar parada em 0%.
+             REAPROVEITADA por calcular() pra corrigir também o saldo
+             financiado durante a obra (radio "Com correção pré-obras"
+             na Cláusula 3) — não existe campo de INCC separado pra
+             isso. Se quiser uma taxa diferente pra cada coisa, esse é
+             o ponto a desacoplar. -->
         <div class="field" style="margin-top:0.8rem;max-width:260px">
           <label>
             Taxa Padrão Mensal do INCC (%)
@@ -285,14 +290,35 @@
         </div>
 
         <div class="field">
-          <label>Valor inicial da prestação</label>
-          <input type="text" id="intervaloAmort"
-                 placeholder="1" data-mask="int" value="1">
-                  <input type="radio" id="basico" name="plano" value="basic">
-                  <label for="semCorrObra">Com correcao pre obras</label><br>
+          <label>Prestação PRICE Calculada (R$)</label>
+          <!-- Readonly: calculada por calcular() via fórmula PRICE padrão.
+               Não é um valor que o usuário digita — fica fixa durante
+               toda a simulação (igual ao PMT do Python.py). -->
+          <input type="text" id="pmtCalculado"
+                 placeholder="Calculada automaticamente"
+                 data-mask="money" readonly>
+        </div>
 
-                  <input type="radio" id="padrinho" name="plano" value="premium" checked>
-                  <label for="semCorrObra">Sem correcao pre obras</label><br>
+        <!-- Corrigido: tinha um id duplicado de intervaloAmort aqui (não
+             alcançável por getElementById) e os rádios tinham
+             label for="semCorrObra" sem nenhum elemento com esse id —
+             clicar no texto do label não marcava o rádio. -->
+        <div class="field">
+          <label>Correção do saldo durante a obra</label>
+          <span style="color:var(--muted);font-size:0.7em">
+            — se o saldo financiado já cresce por INCC enquanto a obra
+            roda, ou só depois da entrega das chaves
+          </span>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;margin-top:0.2rem">
+            <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal">
+              <input type="radio" id="corrigirObraSim" name="corrigirObra" value="sim">
+              Com correção pré-obras (INCC)
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal">
+              <input type="radio" id="corrigirObraNao" name="corrigirObra" value="nao" checked>
+              Sem correção pré-obras
+            </label>
+          </div>
         </div>
 
       </div>
@@ -371,7 +397,7 @@
          Fica oculta até o primeiro cálculo.
          Revelada por calcular() via display:block.
          ========================================== -->
-    <div id="results">
+    <div id="results" style="display:none">
       <hr class="divider">
 
       <!-- Cards de resumo numérico -->
